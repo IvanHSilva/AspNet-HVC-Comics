@@ -2,13 +2,18 @@
 
 <h1>Revistas</h1>
 
-<p>Total encontrado: @Model.Count</p>
+<p>
+    Página: @ViewBag.CurrentPage
+    |
+    Registros: @Model.Count
+</p>
+
 
 <table class="table table-striped">
 
     <thead>
         <tr>
-            <th>ID</th>
+            <th>Código</th>
             <th>Revista</th>
             <th>Edição</th>
             <th>Título</th>
@@ -33,3 +38,13 @@
     </tbody>
 
 </table>
+
+
+<a asp-action="Index" asp-route-page="@(ViewBag.CurrentPage - 1)" class="btn btn-secondary">
+    Anterior
+</a>
+
+
+<a asp-action="Index" asp-route-page="@(ViewBag.CurrentPage + 1)" class="btn btn-primary">
+    Próxima
+</a>
