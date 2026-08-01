@@ -1,0 +1,35 @@
+@model List<HVC_Comics.Models.Comic>
+
+<h1>Revistas</h1>
+
+<p>Total encontrado: @Model.Count</p>
+
+<table class="table table-striped">
+
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Revista</th>
+            <th>Edição</th>
+            <th>Título</th>
+            <th>Preço</th>
+        </tr>
+    </thead>
+
+
+    <tbody>
+
+        @foreach (var comic in Model)
+        {
+            <tr>
+                <td>@comic.Id</td>
+                <td>@comic.Name</td>
+                <td>@comic.Number</td>
+                <td>@comic.ComicTitle</td>
+                <td>@comic.Price.ToString("C")</td>
+            </tr>
+        }
+
+    </tbody>
+
+</table>
