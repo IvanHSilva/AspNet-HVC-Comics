@@ -9,10 +9,8 @@ public class ComicController(ComicRepository repository) : Controller
 
     public IActionResult Index(int page = 1)
     {
-        var comics = _repository.GetPaged(page, 50);
+        var result = _repository.GetPaged(page, 50);
 
-        ViewBag.CurrentPage = page;
-
-        return View(comics);
+        return View(result);
     }
 }
