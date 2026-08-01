@@ -27,8 +27,9 @@
             <th>Código</th>
             <th>Revista</th>
             <th>Edição</th>
-            <th>Título</th>
-            <th>Editora</th>
+            <th>Editora BR</th>
+            <th>Editora EUA</th>
+            <th>Mês</th>
             <th>Ano</th>
             <th>Preço</th>
         </tr>
@@ -41,8 +42,9 @@
                 <td>@comic.Id</td>
                 <td>@comic.Name</td>
                 <td>@comic.Number</td>
-                <td>@comic.ComicTitle</td>
                 <td>@comic.Publisher</td>
+                <td>@comic.Licensor</td>
+                <td>@comic.ComicMonth</td>
                 <td>@comic.ComicYear</td>
                 <td>@comic.Price.ToString("C")</td>
             </tr>
@@ -55,19 +57,15 @@
 
     <ul class="pagination justify-content-center">
         <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
-            <a class="page-link" asp-action="Index" asp-route-page="1">
-                « Primeira
-            </a>
+            <a class="page-link" asp-action="Index" asp-route-page="1"><<</a>
         </li>
 
         <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
-            <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage - 1)">
-                ‹ Anterior
-            </a>
+            <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage - 1)"><</a>
         </li>
 
         @{
-            int visiblePages = 15;
+            int visiblePages = 20;
             int startPage = Math.Max(1, Model.CurrentPage - (visiblePages / 2));
             int endPage = Math.Min(Model.TotalPages, startPage + visiblePages - 1);
 
@@ -109,15 +107,11 @@
         }
 
         <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
-            <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage + 1)">
-                Próxima ›
-            </a>
+            <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage + 1)">></a>
         </li>
 
         <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
-            <a class="page-link" asp-action="Index" asp-route-page="@Model.TotalPages">
-                Última »
-            </a>
+            <a class="page-link" asp-action="Index" asp-route-page="@Model.TotalPages">>></a>
         </li>
     </ul>
 </nav>

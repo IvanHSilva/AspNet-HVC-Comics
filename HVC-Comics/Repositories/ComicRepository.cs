@@ -31,7 +31,7 @@ public class ComicRepository(SqlServerConnectionFactory factory)
         int offset = (page - 1) * pageSize;
 
         string sql = @"
-        SELECT Codigo, RevistaBR, EdicaoBR, Titulo, Preco
+        SELECT Codigo, RevistaBR, EdicaoBR, EditoraBR, EditoraEUA, NomeMesBR, AnoREvBR, Preco
         FROM Revistas
         ORDER BY Codigo
         OFFSET @Offset ROWS
@@ -51,8 +51,11 @@ public class ComicRepository(SqlServerConnectionFactory factory)
                 Id = reader.GetInt32(0),
                 Name = reader.GetString(1),
                 Number = reader.GetInt16(2),
-                ComicTitle = reader.GetString(3),
-                Price = reader.GetDecimal(4)
+                Publisher = reader.GetString(3),
+                Licensor = reader.GetString(4),
+                ComicMonth = reader.GetString(5),
+                ComicYear = reader.GetInt16(6),
+                Price = reader.GetDecimal(7)
             });
         }
 

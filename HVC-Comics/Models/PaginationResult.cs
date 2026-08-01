@@ -2,7 +2,7 @@ namespace HVC_Comics.Models;
 
 public class PaginationResult<T>
 {
-    public List<T> Items { get; set; } = new();
+    public List<T> Items { get; set; } = [];
 
     public int CurrentPage { get; set; }
 
