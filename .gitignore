@@ -1,0 +1,32 @@
+# Build
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio
+.vs/
+
+# VS Code
+.vscode/
+
+# User files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+
+# Logs
+*.log
+
+# Testes
+TestResults/
+coverage/
+
+# Publish
+publish/
+
+# OS
+.DS_Store
+Thumbs.db

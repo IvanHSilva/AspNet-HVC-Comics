@@ -1,4 +1,4 @@
-namespace HVC.Comics.Models;
+namespace HVC_Comics.Models;
 
 public class Comic
 {
