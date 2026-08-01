@@ -1,0 +1,329 @@
+.comic-header {
+    margin-bottom: 20px;
+}
+
+.comic-header h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* Barra de informações */
+
+.comic-info-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, .08);
+}
+
+.comic-info-left {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.comic-info-left span {
+    white-space: nowrap;
+}
+
+.comic-info-right .badge {
+    background-color: #0d6efd !important;
+    color: #fff;
+    padding: 8px 14px;
+    font-size: .85rem;
+    border-radius: 20px;
+}
+
+
+/* Tabela */
+
+.comic-table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.comic-table {
+
+    width: 100%;
+    background: #fff;
+    border-collapse: collapse;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, .08);
+}
+
+.comic-table th {
+
+    background: #212529;
+    color: #fff;
+    padding: 12px;
+    text-align: center;
+    font-size: .85rem;
+}
+
+
+.comic-table td {
+
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+
+.comic-table tbody tr:hover {
+
+    background-color: #f8f9fa;
+}
+
+
+.comic-table td:first-child {
+
+    color: #0d6efd;
+    font-weight: bold;
+
+}
+
+
+.comic-table td:last-child {
+
+    color: #198754;
+    font-weight: bold;
+}
+
+
+.text-center {
+
+    text-align: center;
+}
+
+
+/* Paginação */
+
+.pagination {
+
+    margin-top: 25px;
+}
+
+
+.page-link {
+
+    font-size: .80rem;
+    padding: 5px 9px;
+    border-radius: 8px !important;
+}
+
+
+/* Cores por Editora / Revistas */
+
+.edit-marvel {
+    background-color: #dcfce7 !important;
+}
+
+.edit-dc {
+    background-color: #ffedd5 !important;
+}
+
+.edit-outra {
+    background-color: #fef9c3 !important;
+}
+
+.edit-info {
+    background-color: #dbeafe !important;
+}
+
+.comic-table tbody tr:hover {
+    filter: brightness(0.95);
+}
+
+
+/* Smartphone Landscape 576px  */
+
+@media (min-width:576px) {
+
+    .comic-info-bar {
+
+        padding: 18px;
+    }
+
+    .comic-table th {
+
+        font-size: .9rem;
+    }
+}
+
+
+
+/* Tablet Portrait 768px  */
+
+@media (min-width:768px) {
+
+    .comic-table {
+
+        min-width: 1000px;
+    }
+
+    .comic-table-container {
+
+        overflow-x: auto;
+    }
+
+    .page-link {
+
+        font-size: .85rem;
+        padding: 7px 11px;
+    }
+}
+
+
+/* Tablet Landscape 992px  */
+
+@media (min-width:992px) {
+
+    .comic-table {
+
+        min-width: auto;
+    }
+
+    .comic-table th {
+
+        font-size: .95rem;
+    }
+
+    .page-link {
+
+        font-size: .9rem;
+    }
+}
+
+
+/* PC 1200px  */
+
+@media (min-width:1200px) {
+
+    .comic-header h1 {
+
+        font-size: 2.3rem;
+    }
+
+    .comic-info-bar {
+
+        padding: 20px 25px;
+    }
+
+    .comic-table th {
+
+        padding: 15px;
+    }
+
+    .comic-table td {
+
+        padding: 14px 16px;
+    }
+}
+
+
+/* Card Mobile Até 767px */
+
+@media (max-width:767px) {
+
+    .comic-table,
+    .comic-table thead,
+    .comic-table tbody,
+    .comic-table tr,
+    .comic-table td {
+
+        display: block;
+    }
+
+    .comic-table thead {
+
+        display: none;
+    }
+
+    .comic-table {
+
+        min-width: auto;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .comic-table tbody tr {
+
+        background: #fff;
+        margin-bottom: 20px;
+        padding: 15px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, .10);
+    }
+
+    .comic-table td {
+
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 5px;
+        text-align: right;
+    }
+
+    .comic-table td::before {
+
+        content: attr(data-label);
+        font-weight: 700;
+        color: #374151;
+        text-align: left;
+    }
+
+    .comic-table td:last-child {
+
+        border-bottom: none;
+    }
+
+    .comic-info-bar {
+
+        flex-direction: column;
+        gap: 45px;
+        text-align: center;
+    }
+
+    .comic-info-left {
+
+        justify-content: center;
+    }
+
+    .pagination {
+
+        flex-wrap: wrap;
+        gap: 2px;
+    }
+
+    .page-link {
+
+        font-size: .75rem;
+        padding: 5px 7px;
+    }
+
+
+    @media (max-width:767px) {
+
+        .edit-marvel {
+            background-color: #dcfce7 !important;
+        }
+
+        .edit-dc {
+            background-color: #ffedd5 !important;
+        }
+
+        .edit-outra {
+            background-color: #fef9c3 !important;
+        }
+
+        .edit-info {
+            background-color: #dbeafe !important;
+        }
+    }
+}

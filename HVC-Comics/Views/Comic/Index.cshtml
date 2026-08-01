@@ -1,16 +1,27 @@
 @model HVC_Comics.Models.PaginationResult<HVC_Comics.Models.Comic>
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/comic.css" />
+}
+
 @{
     ViewData["Title"] = "Revistas";
 }
 
-<h1>Revistas</h1>
+<div class="comic-header">
+    <h1>📚 Revistas</h1>
+</div>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="comic-info-bar">
 
-    <div>
-        <strong>Página:</strong> @Model.CurrentPage de @Model.TotalPages |
-        <strong>Total:</strong> @Model.TotalRecords registros
+    <div class="comic-info-left">
+        <span>
+            <strong>Página:</strong> @Model.CurrentPage de @Model.TotalPages
+        </span>
+
+        <span>
+            <strong>Total:</strong> @Model.TotalRecords registros
+        </span>
     </div>
 
     <div>
@@ -20,38 +31,43 @@
 </div>
 
 
-<table class="table table-striped table-hover">
-
-    <thead class="table-dark">
-        <tr>
-            <th>Código</th>
-            <th>Revista</th>
-            <th>Edição</th>
-            <th>Editora BR</th>
-            <th>Editora EUA</th>
-            <th>Mês</th>
-            <th>Ano</th>
-            <th>Preço</th>
-        </tr>
-    </thead>
-
-    <tbody>
-        @foreach (var comic in Model.Items)
-        {
+<div class="comic-table-container">
+    <table class="comic-table">
+        <thead>
             <tr>
-                <td>@comic.Id</td>
-                <td>@comic.Name</td>
-                <td>@comic.Number</td>
-                <td>@comic.Publisher</td>
-                <td>@comic.Licensor</td>
-                <td>@comic.ComicMonth</td>
-                <td>@comic.ComicYear</td>
-                <td>@comic.Price.ToString("C")</td>
+                <th>Código</th>
+                <th>Revista</th>
+                <th>Edição</th>
+                <th>Editora BR</th>
+                <th>Editora EUA</th>
+                <th>Mês</th>
+                <th>Ano</th>
+                <th>Preço</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
 
+        <tbody>
+            @foreach (var comic in Model.Items)
+            {
+
+                    <tr class="comic-row @(comic.Licensor.Contains("Marvel", StringComparison.OrdinalIgnoreCase)
+                        ? "edit-marvel" : comic.Licensor.Contains("DC", StringComparison.OrdinalIgnoreCase)
+                        ? "edit-dc" : comic.Name.Contains("Wiz", StringComparison.OrdinalIgnoreCase)
+                        || comic.Name.Contains("Super-Heróis", StringComparison.OrdinalIgnoreCase)
+                        ? "edit-info" : "edit-outra")">
+                    <td data-label="Código">@comic.Id</td>
+                    <td data-label="Revista">@comic.Name</td>
+                    <td data-label="Edição">@comic.Number.ToString("D2")</td>
+                    <td data-label="Editora BR">@comic.Publisher</td>
+                    <td data-label="Editora EUA">@comic.Licensor</td>
+                    <td data-label="Mês">@comic.ComicMonth</td>
+                    <td data-label="Ano">@comic.ComicYear</td>
+                    <td data-label="Preço">@comic.Price.ToString("C")</td>
+                </tr>
+            }
+        </tbody>    
+    </table>
+</div>
 
 <nav aria-label="Navegação de páginas">
 
@@ -66,6 +82,14 @@
 
         @{
             int visiblePages = 20;
+
+            if (Context.Request.Headers["User-Agent"]
+                .ToString()
+                .Contains("Mobile"))
+            {
+                visiblePages = 7;
+            }
+
             int startPage = Math.Max(1, Model.CurrentPage - (visiblePages / 2));
             int endPage = Math.Min(Model.TotalPages, startPage + visiblePages - 1);
 

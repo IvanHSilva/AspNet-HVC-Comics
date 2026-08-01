@@ -9,7 +9,16 @@ public class ComicController(ComicRepository repository) : Controller
 
     public IActionResult Index(int page = 1)
     {
-        var result = _repository.GetPaged(page, 50);
+        var userAgent = Request.Headers.UserAgent.ToString();
+
+        int pageSize = 50;
+
+        if (userAgent.Contains("Mobile"))
+        {
+            pageSize = 10;
+        }
+
+        var result = _repository.GetPaged(page, pageSize);
 
         return View(result);
     }
