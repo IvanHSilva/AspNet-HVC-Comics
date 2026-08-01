@@ -1,4 +1,5 @@
 using HVC_Comics.Data;
+using HVC_Comics.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<SqlServerConnection>();
 builder.Services.AddScoped<SqlServerConnectionFactory>();
+builder.Services.AddScoped<ComicRepository>();
 
 var app = builder.Build();
 
