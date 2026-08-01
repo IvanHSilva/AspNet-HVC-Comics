@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HVC-Comics")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+65c76c3b9b7948a10c752a1dc2432f1f75657dd7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a0bf55837ae34ca76b4dbb41f3ac8a4d04ea331c")]
 [assembly: System.Reflection.AssemblyProductAttribute("HVC-Comics")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HVC-Comics")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
