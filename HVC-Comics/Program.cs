@@ -5,10 +5,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddMemoryCache();
 
 builder.Services.AddScoped<SqlServerConnection>();
 builder.Services.AddScoped<SqlServerConnectionFactory>();
-builder.Services.AddScoped<ComicRepository>();
+//builder.Services.AddScoped<ComicRepository>();
+var comicSource = builder.Configuration["ComicData:Source"];
+
+if (string.Equals(comicSource, "Json", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddScoped<IComicRepository, JsonComicRepository>();
+}
+else
+{
+    builder.Services.AddScoped<IComicRepository, ComicRepository>();
+}
 
 var app = builder.Build();
 
@@ -31,6 +42,5 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
-
 
 app.Run();

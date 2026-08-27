@@ -3,9 +3,9 @@ using HVC_Comics.Repositories;
 
 namespace HVC_Comics.Controllers;
 
-public class ComicController(ComicRepository repository) : Controller
+public class ComicController(IComicRepository repository) : Controller
 {
-    private readonly ComicRepository _repository = repository;
+    private readonly IComicRepository _repository = repository;
 
     public IActionResult Index(int page = 1)
     {

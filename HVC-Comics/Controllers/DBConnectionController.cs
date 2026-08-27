@@ -3,14 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HVC_Comics.Controllers;
 
-public class DBConnectionController : Controller
+public class DBConnectionController(SqlServerConnection connection) : Controller
 {
-    private readonly SqlServerConnection _connection;
-
-    public DBConnectionController(SqlServerConnection connection)
-    {
-        _connection = connection;
-    }
+    private readonly SqlServerConnection _connection = connection;
 
     public IActionResult Database()
     {

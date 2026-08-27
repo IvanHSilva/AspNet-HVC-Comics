@@ -4,7 +4,7 @@ using Microsoft.Data.SqlClient;
 
 namespace HVC_Comics.Repositories;
 
-public class ComicRepository(SqlServerConnectionFactory factory)
+public class ComicRepository(SqlServerConnectionFactory factory) : IComicRepository
 {
     private readonly SqlServerConnectionFactory _factory = factory;
 
