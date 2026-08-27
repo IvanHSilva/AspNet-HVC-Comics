@@ -23,6 +23,16 @@ else
 
 var app = builder.Build();
 
+// Configure OS file paths
+var platformConfig = OperatingSystem.IsWindows()
+    ? "appsettings.Windows.json"
+    : "appsettings.Linux.json";
+
+builder.Configuration.AddJsonFile(
+    platformConfig,
+    optional: false,
+    reloadOnChange: true);
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
