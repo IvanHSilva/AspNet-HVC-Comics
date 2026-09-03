@@ -14,6 +14,11 @@ builder.Configuration.AddJsonFile(
     optional: true,
     reloadOnChange: true);
 
+builder.Configuration.AddJsonFile(
+    "appsettings.Local.json",
+    optional: true,
+    reloadOnChange: true);
+
 // Services
 builder.Services.AddControllersWithViews();
 
@@ -47,6 +52,9 @@ switch (comicSource?.Trim().ToLowerInvariant())
         break;
 
     case "mysql":
+
+        builder.Services.AddScoped<
+                    MySqlConnectionFactory>();
 
         builder.Services.AddScoped<
             IComicRepository,

@@ -33,3 +33,6 @@ Thumbs.db
 
 # Data
 Data/
+
+# Local setings
+appsettings.Local.json
