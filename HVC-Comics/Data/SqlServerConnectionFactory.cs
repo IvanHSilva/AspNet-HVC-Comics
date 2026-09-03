@@ -9,7 +9,13 @@ public class SqlServerConnectionFactory(IConfiguration configuration)
     public SqlConnection CreateConnection()
     {
         var connectionString =
-            _configuration.GetConnectionString("SQLConn");
+            _configuration.GetConnectionString("SQLServer");
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "A connection string 'SQLServer' não foi configurada.");
+        }
 
         return new SqlConnection(connectionString);
     }

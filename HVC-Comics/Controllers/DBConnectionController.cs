@@ -3,23 +3,26 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HVC_Comics.Controllers;
 
-public class DBConnectionController(SqlServerConnection connection) : Controller
+public class DBConnectionController(
+    SqlServerConnectionFactory factory) : Controller
 {
-    private readonly SqlServerConnection _connection = connection;
+    private readonly SqlServerConnectionFactory _factory = factory;
 
     public IActionResult Database()
     {
         try
         {
-            using var conn = _connection.CreateConnection();
+            using var connection = _factory.CreateConnection();
 
-            conn.Open();
+            connection.Open();
 
-            return Content("Conexão com o banco de dados realizada com sucesso!");
+            return Content(
+                "Conexão com o SQL Server realizada com sucesso!");
         }
         catch (Exception ex)
         {
-            return Content(ex.Message);
+            return Content(
+                $"Erro ao conectar ao SQL Server: {ex.Message}");
         }
     }
 }

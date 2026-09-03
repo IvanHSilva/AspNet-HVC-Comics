@@ -4,58 +4,76 @@ using HVC_Comics.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// SO configuration
+// OS Configuration
 var platformConfig = OperatingSystem.IsWindows()
     ? "appsettings.Windows.json"
     : "appsettings.Linux.json";
 
 builder.Configuration.AddJsonFile(
     platformConfig,
-    optional: false,
+    optional: true,
     reloadOnChange: true);
 
 // Services
 builder.Services.AddControllersWithViews();
+
 builder.Services.AddMemoryCache();
 
 builder.Services.Configure<ComicDataOptions>(
     builder.Configuration.GetSection("ComicData"));
 
-// Data Source selection
-var comicSource =
-    builder.Configuration["ComicData:Source"];
+// Data Source
+var comicSource = builder.Configuration["ComicData:Source"];
 
 switch (comicSource?.Trim().ToLowerInvariant())
 {
     case "json":
-        builder.Services.AddScoped<IComicRepository, JsonComicRepository>();
+
+        builder.Services.AddScoped<
+            IComicRepository,
+            JsonComicRepository>();
+
         break;
 
     case "sqlserver":
-        builder.Services.AddScoped<SqlServerConnectionFactory>();
-        builder.Services.AddScoped<IComicRepository, SqlServerComicRepository>();
+
+        builder.Services.AddScoped<
+            SqlServerConnectionFactory>();
+
+        builder.Services.AddScoped<
+            IComicRepository,
+            SqlServerComicRepository>();
+
         break;
 
     case "mysql":
-        builder.Services.AddScoped<MySqlConnectionFactory>();
-        builder.Services.AddScoped<IComicRepository, MySqlComicRepository>();
+
+        builder.Services.AddScoped<
+            IComicRepository,
+            MySqlComicRepository>();
+
         break;
 
     case "postgresql":
     case "postgres":
-        builder.Services.AddScoped<PostgreSqlConnectionFactory>();
-        builder.Services.AddScoped<IComicRepository, PostgreSqlComicRepository>();
+
+        builder.Services.AddScoped<
+            IComicRepository,
+            PostgreSqlComicRepository>();
+
         break;
 
     default:
+
         throw new InvalidOperationException(
             $"Fonte de dados '{comicSource}' não suportada. " +
             "Valores válidos: Json, SqlServer, MySql, PostgreSql.");
 }
 
+// Application
 var app = builder.Build();
 
-// HTTP pipeline
+// HTTP Pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -63,6 +81,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 app.UseRouting();
 
 app.UseAuthorization();
