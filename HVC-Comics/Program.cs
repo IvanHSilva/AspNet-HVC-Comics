@@ -64,11 +64,8 @@ switch (comicSource?.Trim().ToLowerInvariant())
 
     case "postgresql":
     case "postgres":
-
-        builder.Services.AddScoped<
-            IComicRepository,
-            PostgreSqlComicRepository>();
-
+        builder.Services.AddScoped<PostgreSqlConnectionFactory>();
+        builder.Services.AddScoped<IComicRepository, PostgreSqlComicRepository>();
         break;
 
     default:
