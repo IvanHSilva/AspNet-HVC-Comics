@@ -16,16 +16,23 @@
 
     <div class="comic-info-left">
         <span>
-            <strong>Página:</strong> @Model.CurrentPage de @Model.TotalPages
+            <strong>Página:</strong> 
+            @Model.CurrentPage de @Model.TotalPages
         </span>
 
         <span>
-            <strong>Total:</strong> @Model.TotalRecords registros
+            <strong>Total:</strong> 
+            @Model.TotalRecords registros
+        </span>
+
+        <span class="badge bg-dark">
+            🗄️ @Model.DataSource
         </span>
     </div>
 
     <div>
-        <span class="badge bg-primary"> Exibindo @Model.Items.Count registros</span>
+        <span class="badge bg-primary"> 
+            Exibindo @Model.Items.Count registros</span>
     </div>
 
 </div>

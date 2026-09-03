@@ -40,6 +40,7 @@ public class JsonComicRepository(
             CurrentPage = page,
             PageSize = pageSize,
             TotalRecords = totalRecords,
+            DataSource = "JSON",
             Items = [.. comics
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)]

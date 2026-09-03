@@ -1,29 +1,10 @@
+using HVC_Comics.Configuration;
 using HVC_Comics.Data;
 using HVC_Comics.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
-builder.Services.AddMemoryCache();
-
-builder.Services.AddScoped<SqlServerConnection>();
-builder.Services.AddScoped<SqlServerConnectionFactory>();
-//builder.Services.AddScoped<ComicRepository>();
-var comicSource = builder.Configuration["ComicData:Source"];
-
-if (string.Equals(comicSource, "Json", StringComparison.OrdinalIgnoreCase))
-{
-    builder.Services.AddScoped<IComicRepository, JsonComicRepository>();
-}
-else
-{
-    builder.Services.AddScoped<IComicRepository, ComicRepository>();
-}
-
-var app = builder.Build();
-
-// Configure OS file paths
+// SO configuration
 var platformConfig = OperatingSystem.IsWindows()
     ? "appsettings.Windows.json"
     : "appsettings.Linux.json";
@@ -33,11 +14,51 @@ builder.Configuration.AddJsonFile(
     optional: false,
     reloadOnChange: true);
 
-// Configure the HTTP request pipeline.
+// Services
+builder.Services.AddControllersWithViews();
+builder.Services.AddMemoryCache();
+
+builder.Services.Configure<ComicDataOptions>(
+    builder.Configuration.GetSection("ComicData"));
+
+// Data Source selection
+var comicSource =
+    builder.Configuration["ComicData:Source"];
+
+switch (comicSource?.Trim().ToLowerInvariant())
+{
+    case "json":
+        builder.Services.AddScoped<IComicRepository, JsonComicRepository>();
+        break;
+
+    case "sqlserver":
+        builder.Services.AddScoped<SqlServerConnectionFactory>();
+        builder.Services.AddScoped<IComicRepository, SqlServerComicRepository>();
+        break;
+
+    case "mysql":
+        builder.Services.AddScoped<MySqlConnectionFactory>();
+        builder.Services.AddScoped<IComicRepository, MySqlComicRepository>();
+        break;
+
+    case "postgresql":
+    case "postgres":
+        builder.Services.AddScoped<PostgreSqlConnectionFactory>();
+        builder.Services.AddScoped<IComicRepository, PostgreSqlComicRepository>();
+        break;
+
+    default:
+        throw new InvalidOperationException(
+            $"Fonte de dados '{comicSource}' não suportada. " +
+            "Valores válidos: Json, SqlServer, MySql, PostgreSql.");
+}
+
+var app = builder.Build();
+
+// HTTP pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
