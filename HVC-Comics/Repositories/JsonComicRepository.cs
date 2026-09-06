@@ -49,9 +49,21 @@ public class JsonComicRepository(
 
     private List<Comic> LoadComics()
     {
-        var file = _configuration["ComicData:JsonFile"];
+        var configuredFile = _configuration["ComicData:JsonFile"];
 
-        if (string.IsNullOrWhiteSpace(file) || !File.Exists(file))
+        if (string.IsNullOrWhiteSpace(configuredFile))
+        {
+            _logger.LogWarning(
+                "O caminho do arquivo de backup JSON não foi configurado.");
+
+            return [];
+        }
+
+        var file = Path.IsPathRooted(configuredFile)
+            ? configuredFile
+            : Path.Combine(_environment.ContentRootPath, configuredFile);
+
+        if (!File.Exists(file))
         {
             _logger.LogWarning(
                 "O arquivo de backup JSON não foi encontrado: {File}",
