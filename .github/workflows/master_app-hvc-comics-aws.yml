@@ -9,6 +9,10 @@ on:
 
 jobs:
 
+  # ============================================================
+  # BUILD
+  # ============================================================
+
   build:
     name: Build and Publish
     runs-on: ubuntu-latest
@@ -30,7 +34,8 @@ jobs:
         run: dotnet --info
 
       - name: Restore
-        run: dotnet restore HVC-Comics/HVC-Comics.csproj
+        run: |
+          dotnet restore HVC-Comics/HVC-Comics.csproj
 
       - name: Build
         run: |
@@ -49,23 +54,42 @@ jobs:
 
       - name: Verify publish
         run: |
-          echo "Published files:"
+          echo "=========================================="
+          echo "Published files"
+          echo "=========================================="
+
           find ./publish -maxdepth 2 -type f | sort
 
           echo ""
           echo "Publish size:"
           du -sh ./publish
 
+      # --------------------------------------------------------
+      # Data is maintained on the EC2 server.
+      # Comics.json will NOT be included in the deployment.
+      # --------------------------------------------------------
+
       - name: Remove server data from artifact
         run: |
           rm -rf ./publish/Data
 
+          echo "Data directory removed from deployment artifact."
+
       - name: Create deployment archive
         run: |
-          tar -czf hvc-comics.tar.gz -C ./publish .
+          tar \
+            -czf hvc-comics.tar.gz \
+            -C ./publish .
 
-          echo "Archive created:"
+          echo "=========================================="
+          echo "Deployment archive"
+          echo "=========================================="
+
           ls -lh hvc-comics.tar.gz
+
+          echo ""
+          echo "Archive contents:"
+          tar -tzf hvc-comics.tar.gz | head -100
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
@@ -73,6 +97,10 @@ jobs:
           name: hvc-comics-publish
           path: hvc-comics.tar.gz
 
+
+  # ============================================================
+  # DEPLOY
+  # ============================================================
 
   deploy:
     name: Deploy to AWS EC2
@@ -92,8 +120,27 @@ jobs:
 
       - name: Verify artifact
         run: |
-          ls -lah
-          tar -tzf hvc-comics.tar.gz | head -50
+          set -e
+
+          echo "=========================================="
+          echo "Downloaded artifact"
+          echo "=========================================="
+
+          ls -lah hvc-comics.tar.gz
+
+          echo ""
+          echo "Validating archive..."
+
+          tar -tzf hvc-comics.tar.gz > /dev/null
+
+          echo "Archive is valid."
+
+      # --------------------------------------------------------
+      # SSH
+      #
+      # We intentionally do NOT use ssh-keyscan here.
+      # This avoids the current failure in the workflow.
+      # --------------------------------------------------------
 
       - name: Configure SSH
         shell: bash
@@ -108,31 +155,63 @@ jobs:
 
           chmod 600 ~/.ssh/hvc-comics-key
 
-          ssh-keyscan -H "${{ secrets.AWS_EC2_HOST }}" \
-            >> ~/.ssh/known_hosts
+          echo "SSH key configured."
+
+      # --------------------------------------------------------
+      # SSH TEST
+      # --------------------------------------------------------
 
       - name: Test SSH connection
+        shell: bash
         run: |
           ssh \
             -i ~/.ssh/hvc-comics-key \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
             -o BatchMode=yes \
             -o ConnectTimeout=15 \
+            -o ServerAliveInterval=10 \
+            -o ServerAliveCountMax=3 \
             "${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }}" \
-            "echo SSH connection successful"
+            "hostname && whoami && echo 'SSH connection successful'"
+
+      # --------------------------------------------------------
+      # UPLOAD
+      # --------------------------------------------------------
 
       - name: Upload application
+        shell: bash
         run: |
+          set -e
+
+          echo "Uploading deployment archive..."
+
           scp \
             -i ~/.ssh/hvc-comics-key \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
             -o ConnectTimeout=15 \
+            -o ServerAliveInterval=10 \
+            -o ServerAliveCountMax=3 \
             hvc-comics.tar.gz \
             "${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }}:/tmp/hvc-comics.tar.gz"
+
+          echo "Upload completed."
+
+      # --------------------------------------------------------
+      # DEPLOY ON EC2
+      # --------------------------------------------------------
 
       - name: Deploy application
         shell: bash
         run: |
           ssh \
             -i ~/.ssh/hvc-comics-key \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o ConnectTimeout=15 \
+            -o ServerAliveInterval=10 \
+            -o ServerAliveCountMax=3 \
             "${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }}" \
             'bash -s' <<'REMOTE_SCRIPT'
 
@@ -140,6 +219,7 @@ jobs:
 
           APP_DIR="/opt/hvc-comics"
           PUBLISH_DIR="$APP_DIR/publish"
+
           BACKUP_DIR="/tmp/hvc-comics-backup"
           ARCHIVE="/tmp/hvc-comics.tar.gz"
 
@@ -149,7 +229,11 @@ jobs:
           echo "HVC Comics - AWS deployment"
           echo "=========================================="
 
-          echo "Checking directories..."
+          # ----------------------------------------------------
+          # Validate server
+          # ----------------------------------------------------
+
+          echo "Checking application directory..."
 
           if [ ! -d "$APP_DIR" ]; then
               echo "ERROR: $APP_DIR does not exist."
@@ -162,37 +246,65 @@ jobs:
           fi
 
           if [ ! -f "$ARCHIVE" ]; then
-              echo "ERROR: Deployment archive does not exist."
+              echo "ERROR: Deployment archive not found:"
+              echo "$ARCHIVE"
               exit 1
           fi
 
-          echo "Checking archive..."
+          echo "Server directories OK."
+
+          # ----------------------------------------------------
+          # Validate archive
+          # ----------------------------------------------------
+
+          echo "Validating deployment archive..."
 
           tar -tzf "$ARCHIVE" > /dev/null
 
           echo "Archive is valid."
 
-          echo "Stopping application..."
+          # ----------------------------------------------------
+          # Backup Comics.json
+          # ----------------------------------------------------
 
-          sudo systemctl stop "$SERVICE"
-
-          echo "Creating backup..."
+          echo "Creating temporary backup directory..."
 
           rm -rf "$BACKUP_DIR"
           mkdir -p "$BACKUP_DIR"
 
           if [ -f "$PUBLISH_DIR/Data/Comics.json" ]; then
+
               echo "Backing up Comics.json..."
 
               cp \
                 "$PUBLISH_DIR/Data/Comics.json" \
                 "$BACKUP_DIR/Comics.json"
 
+              echo "Comics.json backup created."
+
           else
-              echo "WARNING: Comics.json does not exist."
+
+              echo "WARNING: Comics.json does not currently exist."
+
           fi
 
-          echo "Cleaning old application..."
+          # ----------------------------------------------------
+          # Stop application
+          # ----------------------------------------------------
+
+          echo "Stopping application..."
+
+          sudo systemctl stop "$SERVICE"
+
+          echo "Application stopped."
+
+          # ----------------------------------------------------
+          # Remove old application files
+          #
+          # Data is intentionally preserved.
+          # ----------------------------------------------------
+
+          echo "Cleaning old application files..."
 
           find "$PUBLISH_DIR" \
             -mindepth 1 \
@@ -200,11 +312,23 @@ jobs:
             ! -name "Data" \
             -exec rm -rf {} +
 
+          echo "Old application files removed."
+
+          # ----------------------------------------------------
+          # Extract new application
+          # ----------------------------------------------------
+
           echo "Extracting new application..."
 
           tar \
             -xzf "$ARCHIVE" \
             -C "$PUBLISH_DIR"
+
+          echo "New application extracted."
+
+          # ----------------------------------------------------
+          # Restore Comics.json
+          # ----------------------------------------------------
 
           echo "Restoring Comics.json..."
 
@@ -216,51 +340,81 @@ jobs:
                 "$BACKUP_DIR/Comics.json" \
                 "$PUBLISH_DIR/Data/Comics.json"
 
-              echo "Comics.json restored."
+              echo "Comics.json restored successfully."
 
           else
 
-              echo "WARNING: No Comics.json backup available."
+              echo "WARNING: No Comics.json backup was available."
 
           fi
 
-          echo "Setting permissions..."
+          # ----------------------------------------------------
+          # Permissions
+          # ----------------------------------------------------
 
-          sudo chown -R hvc-comics:hvc-comics "$PUBLISH_DIR"
+          echo "Setting application ownership..."
+
+          sudo chown \
+            -R \
+            hvc-comics:hvc-comics \
+            "$PUBLISH_DIR"
+
+          echo "Ownership configured."
+
+          # ----------------------------------------------------
+          # Start application
+          # ----------------------------------------------------
 
           echo "Starting application..."
 
           sudo systemctl start "$SERVICE"
 
+          echo "Application start command completed."
+
+          # ----------------------------------------------------
+          # Wait
+          # ----------------------------------------------------
+
           echo "Waiting for application..."
 
           sleep 5
 
-          echo "Checking service..."
+          # ----------------------------------------------------
+          # Check service
+          # ----------------------------------------------------
+
+          echo "Checking service status..."
 
           if ! sudo systemctl is-active --quiet "$SERVICE"; then
 
-              echo "ERROR: Service failed to start."
+              echo ""
+              echo "=========================================="
+              echo "ERROR: Application failed to start"
+              echo "=========================================="
 
               echo ""
-              echo "===== SYSTEMD STATUS ====="
-
-              sudo systemctl status "$SERVICE" \
+              echo "SYSTEMD STATUS:"
+              sudo systemctl status \
+                "$SERVICE" \
                 --no-pager \
                 --full || true
 
               echo ""
-              echo "===== JOURNAL ====="
-
+              echo "SYSTEMD LOG:"
               sudo journalctl \
                 -u "$SERVICE" \
                 -n 100 \
                 --no-pager || true
 
               exit 1
+
           fi
 
-          echo "Service is running."
+          echo "Application is running."
+
+          # ----------------------------------------------------
+          # Check Comics.json
+          # ----------------------------------------------------
 
           echo "Checking Comics.json..."
 
@@ -268,21 +422,27 @@ jobs:
 
               echo "Comics.json exists."
 
-              ls -lh "$PUBLISH_DIR/Data/Comics.json"
+              ls -lh \
+                "$PUBLISH_DIR/Data/Comics.json"
 
           else
 
+              echo ""
               echo "ERROR: Comics.json is missing."
-
               exit 1
 
           fi
+
+          # ----------------------------------------------------
+          # Cleanup
+          # ----------------------------------------------------
 
           echo "Cleaning temporary files..."
 
           rm -f "$ARCHIVE"
           rm -rf "$BACKUP_DIR"
 
+          echo ""
           echo "=========================================="
           echo "Deployment completed successfully."
           echo "=========================================="
