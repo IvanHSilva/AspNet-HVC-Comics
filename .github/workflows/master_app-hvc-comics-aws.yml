@@ -1,165 +1,177 @@
-name: Build and deploy ASP.Net Core app to AWS EC2 - hvc-comics
+name: Build and deploy ASP.NET Core app to AWS EC2 - HVC Comics
 
 on:
-push:
-branches:
-- master
-workflow_dispatch:
+  push:
+    branches:
+      - master
+
+  workflow_dispatch:
 
 jobs:
-build:
-runs-on: ubuntu-latest
-permissions:
-contents: read
 
-steps:
-  - name: Checkout
-    uses: actions/checkout@v4
+  build:
+    name: Build and Publish
+    runs-on: ubuntu-latest
 
-  - name: Set up .NET
-    uses: actions/setup-dotnet@v4
-    with:
-      dotnet-version: '10.x'
+    permissions:
+      contents: read
 
-  - name: Restore
-    run: dotnet restore HVC-Comics/HVC-Comics.csproj
+    steps:
 
-  - name: Build
-    run: dotnet build HVC-Comics/HVC-Comics.csproj --configuration Release --no-restore
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  - name: Publish
-    run: dotnet publish HVC-Comics/HVC-Comics.csproj --configuration Release --no-build -o ./publish
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
 
-  - name: Create deployment package
-    run: |
-      tar -czf hvc-comics.tar.gz -C ./publish .
+      - name: Restore
+        run: dotnet restore HVC-Comics/HVC-Comics.csproj
 
-  - name: Upload deployment package
-    uses: actions/upload-artifact@v4
-    with:
-      name: hvc-comics-package
-      path: hvc-comics.tar.gz
+      - name: Build
+        run: dotnet build HVC-Comics/HVC-Comics.csproj --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish HVC-Comics/HVC-Comics.csproj --configuration Release --no-build --output ./publish
+
+      - name: Remove server data from artifact
+        run: |
+          rm -rf ./publish/Data
+
+      - name: Create deployment archive
+        run: |
+          tar -czf hvc-comics.tar.gz -C ./publish .
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hvc-comics-publish
+          path: hvc-comics.tar.gz
 
 
-deploy:
-runs-on: ubuntu-latest
-needs: build
-permissions:
-contents: read
+  deploy:
+    name: Deploy to AWS EC2
+    runs-on: ubuntu-latest
 
-steps:
-  - name: Download deployment package
-    uses: actions/download-artifact@v4
-    with:
-      name: hvc-comics-package
+    needs: build
 
-  - name: Configure SSH
-    env:
-      AWS_EC2_SSH_KEY: ${{ secrets.AWS_EC2_SSH_KEY }}
-      AWS_EC2_HOST: ${{ secrets.AWS_EC2_HOST }}
-    run: |
-      mkdir -p ~/.ssh
+    permissions:
+      contents: read
 
-      printf '%s\n' "$AWS_EC2_SSH_KEY" > ~/.ssh/aws_ec2_key
+    steps:
 
-      chmod 600 ~/.ssh/aws_ec2_key
+      - name: Download deployment artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: hvc-comics-publish
 
-      ssh-keyscan -H "$AWS_EC2_HOST" >> ~/.ssh/known_hosts
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
 
-  - name: Upload package to EC2
-    env:
-      AWS_EC2_HOST: ${{ secrets.AWS_EC2_HOST }}
-      AWS_EC2_USER: ${{ secrets.AWS_EC2_USER }}
-    run: |
-      scp \
-        -i ~/.ssh/aws_ec2_key \
-        hvc-comics.tar.gz \
-        "$AWS_EC2_USER@$AWS_EC2_HOST:/tmp/hvc-comics.tar.gz"
+          echo "${{ secrets.AWS_EC2_SSH_KEY }}" > ~/.ssh/hvc-comics-key
+          chmod 600 ~/.ssh/hvc-comics-key
 
-  - name: Deploy on EC2
-    env:
-      AWS_EC2_HOST: ${{ secrets.AWS_EC2_HOST }}
-      AWS_EC2_USER: ${{ secrets.AWS_EC2_USER }}
-    run: |
-      ssh \
-        -i ~/.ssh/aws_ec2_key \
-        "$AWS_EC2_USER@$AWS_EC2_HOST" \
-        "bash -s" << 'REMOTE_SCRIPT'
+          ssh-keyscan -H "${{ secrets.AWS_EC2_HOST }}" >> ~/.ssh/known_hosts
 
-      set -e
+      - name: Upload application
+        run: |
+          scp \
+            -i ~/.ssh/hvc-comics-key \
+            hvc-comics.tar.gz \
+            "${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }}:/tmp/hvc-comics.tar.gz"
 
-      APP_DIR="/var/www/hvc-comics"
-      PACKAGE="/tmp/hvc-comics.tar.gz"
+      - name: Deploy application
+        run: |
+          ssh \
+            -i ~/.ssh/hvc-comics-key \
+            "${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }}" \
+            'bash -s' <<'REMOTE_SCRIPT'
 
-      echo "Checking application directory..."
+          set -e
 
-      if [ ! -d "$APP_DIR" ]; then
-          echo "ERROR: Application directory not found:"
-          echo "$APP_DIR"
-          exit 1
-      fi
+          APP_DIR="/opt/hvc-comics"
+          PUBLISH_DIR="$APP_DIR/publish"
+          BACKUP_DIR="/tmp/hvc-comics-backup"
+          ARCHIVE="/tmp/hvc-comics.tar.gz"
 
-      echo "Checking Comics.json..."
+          echo "=========================================="
+          echo "HVC Comics - AWS deployment"
+          echo "=========================================="
 
-      if [ ! -f "$APP_DIR/Data/Comics.json" ]; then
-          echo "ERROR: Data/Comics.json not found."
-          echo "Deployment aborted to protect the existing data."
-          exit 1
-      fi
+          echo "Stopping application..."
 
-      echo "Creating temporary deployment directory..."
+          sudo systemctl stop hvc-comics.service
 
-      TMP_DIR=$(mktemp -d)
+          echo "Creating temporary backup directory..."
 
-      echo "Extracting package..."
+          rm -rf "$BACKUP_DIR"
+          mkdir -p "$BACKUP_DIR"
 
-      tar -xzf "$PACKAGE" -C "$TMP_DIR"
+          echo "Preserving Comics.json..."
 
-      echo "Stopping application..."
+          if [ -f "$PUBLISH_DIR/Data/Comics.json" ]; then
+              cp "$PUBLISH_DIR/Data/Comics.json" "$BACKUP_DIR/Comics.json"
+          else
+              echo "WARNING: Comics.json was not found."
+          fi
 
-      sudo systemctl stop hvc-comics
+          echo "Cleaning application files..."
 
-      echo "Updating application files..."
+          find "$PUBLISH_DIR" -mindepth 1 -maxdepth 1 \
+            ! -name "Data" \
+            -exec rm -rf {} +
 
-      find "$TMP_DIR" -mindepth 1 -maxdepth 1 ! -name Data -exec cp -a {} "$APP_DIR/" \;
+          echo "Extracting new application..."
 
-      echo "Updating application Data directory..."
+          tar -xzf "$ARCHIVE" -C "$PUBLISH_DIR"
 
-      if [ -d "$TMP_DIR/Data" ]; then
-          find "$TMP_DIR/Data" -mindepth 1 ! -name Comics.json -exec cp -a {} "$APP_DIR/Data/" \;
-      fi
+          echo "Restoring Comics.json..."
 
-      echo "Starting application..."
+          if [ -f "$BACKUP_DIR/Comics.json" ]; then
 
-      sudo systemctl start hvc-comics
+              mkdir -p "$PUBLISH_DIR/Data"
 
-      echo "Checking application status..."
+              cp \
+                "$BACKUP_DIR/Comics.json" \
+                "$PUBLISH_DIR/Data/Comics.json"
 
-      if ! sudo systemctl is-active --quiet hvc-comics; then
-          echo "ERROR: Application failed to start."
+          fi
 
-          sudo journalctl \
-            -u hvc-comics \
-            -n 50 \
-            --no-pager
+          echo "Setting ownership..."
 
-          rm -rf "$TMP_DIR"
+          sudo chown -R hvc-comics:hvc-comics "$PUBLISH_DIR"
 
-          exit 1
-      fi
+          echo "Starting application..."
 
-      echo "Cleaning temporary files..."
+          sudo systemctl start hvc-comics.service
 
-      rm -rf "$TMP_DIR"
-      rm -f "$PACKAGE"
+          echo "Waiting for application..."
 
-      echo "=========================================="
-      echo "HVC-Comics AWS deployment completed"
-      echo "=========================================="
+          sleep 5
 
-      REMOTE_SCRIPT
+          echo "Checking service status..."
 
-  - name: Deployment summary
-    run: |
-      echo "AWS EC2 deployment completed successfully."
-      echo "Commit: ${{ github.sha }}"
+          sudo systemctl is-active --quiet hvc-comics.service
+
+          echo "Checking Comics.json..."
+
+          if [ -f "$PUBLISH_DIR/Data/Comics.json" ]; then
+              echo "Comics.json preserved successfully."
+          else
+              echo "ERROR: Comics.json is missing."
+              exit 1
+          fi
+
+          echo "Cleaning temporary files..."
+
+          rm -f "$ARCHIVE"
+          rm -rf "$BACKUP_DIR"
+
+          echo "=========================================="
+          echo "Deployment completed successfully."
+          echo "=========================================="
+
+          REMOTE_SCRIPT
