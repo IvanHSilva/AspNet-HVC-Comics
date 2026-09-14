@@ -1,0 +1,126 @@
+name: Build and deploy ASP.Net Core app to AWS EC2 - hvc-comics
+
+on:
+push:
+branches:
+- master
+workflow_dispatch:
+
+jobs:
+build:
+runs-on: ubuntu-latest
+permissions:
+contents: read
+
+steps:
+  - name: Checkout
+    uses: actions/checkout@v4
+
+  - name: Set up .NET
+    uses: actions/setup-dotnet@v4
+    with:
+      dotnet-version: '10.x'
+
+  - name: Restore
+    run: dotnet restore HVC-Comics/HVC-Comics.csproj
+
+  - name: Build
+    run: dotnet build HVC-Comics/HVC-Comics.csproj --configuration Release --no-restore
+
+  - name: Publish
+    run: dotnet publish HVC-Comics/HVC-Comics.csproj --configuration Release --no-build -o ./publish
+
+  - name: Create deployment package
+    run: |
+      tar -czf hvc-comics-${{ github.sha }}.tar.gz -C ./publish .
+
+  - name: Upload deployment package
+    uses: actions/upload-artifact@v4
+    with:
+      name: hvc-comics-package
+      path: hvc-comics-${{ github.sha }}.tar.gz
+
+
+deploy:
+runs-on: ubuntu-latest
+needs: build
+permissions:
+contents: read
+
+steps:
+  - name: Download deployment package
+    uses: actions/download-artifact@v4
+    with:
+      name: hvc-comics-package
+
+  - name: Configure SSH
+    env:
+      AWS_EC2_SSH_KEY: ${{ secrets.AWS_EC2_SSH_KEY }}
+      AWS_EC2_HOST: ${{ secrets.AWS_EC2_HOST }}
+      AWS_EC2_USER: ${{ secrets.AWS_EC2_USER }}
+    run: |
+      mkdir -p ~/.ssh
+
+      printf '%s\n' "$AWS_EC2_SSH_KEY" > ~/.ssh/aws_ec2_key
+      chmod 600 ~/.ssh/aws_ec2_key
+
+      ssh-keyscan -H "$AWS_EC2_HOST" >> ~/.ssh/known_hosts
+
+  - name: Upload package to EC2
+    env:
+      AWS_EC2_HOST: ${{ secrets.AWS_EC2_HOST }}
+      AWS_EC2_USER: ${{ secrets.AWS_EC2_USER }}
+    run: |
+      scp \
+        -i ~/.ssh/aws_ec2_key \
+        hvc-comics-${{ github.sha }}.tar.gz \
+        "$AWS_EC2_USER@$AWS_EC2_HOST:/tmp/"
+
+  - name: Deploy on EC2
+    env:
+      AWS_EC2_HOST: ${{ secrets.AWS_EC2_HOST }}
+      AWS_EC2_USER: ${{ secrets.AWS_EC2_USER }}
+    run: |
+      ssh \
+        -i ~/.ssh/aws_ec2_key \
+        "$AWS_EC2_USER@$AWS_EC2_HOST" \
+        "bash -s" << 'REMOTE_SCRIPT'
+
+      set -e
+
+      APP_DIR="/var/www/hvc-comics"
+      PACKAGE="/tmp/hvc-comics-${{ github.sha }}.tar.gz"
+      RELEASE_DIR="$APP_DIR/releases/${{ github.sha }}"
+
+      echo "Creating release directory..."
+      sudo mkdir -p "$RELEASE_DIR"
+
+      echo "Extracting application..."
+      sudo tar -xzf "$PACKAGE" -C "$RELEASE_DIR"
+
+      echo "Removing deployment package..."
+      rm -f "$PACKAGE"
+
+      echo "Stopping application..."
+      sudo systemctl stop hvc-comics
+
+      echo "Updating current release..."
+      sudo rm -f "$APP_DIR/current"
+      sudo ln -s "$RELEASE_DIR" "$APP_DIR/current"
+
+      echo "Starting application..."
+      sudo systemctl start hvc-comics
+
+      echo "Checking application status..."
+      sudo systemctl is-active --quiet hvc-comics
+
+      echo "Deployment completed successfully."
+
+      REMOTE_SCRIPT
+
+  - name: Deployment summary
+    run: |
+      echo "=========================================="
+      echo "HVC-Comics AWS deployment completed"
+      echo "Commit: ${{ github.sha }}"
+      echo "=========================================="
