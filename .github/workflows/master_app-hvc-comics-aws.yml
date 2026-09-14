@@ -32,13 +32,13 @@ steps:
 
   - name: Create deployment package
     run: |
-      tar -czf hvc-comics-${{ github.sha }}.tar.gz -C ./publish .
+      tar -czf hvc-comics.tar.gz -C ./publish .
 
   - name: Upload deployment package
     uses: actions/upload-artifact@v4
     with:
       name: hvc-comics-package
-      path: hvc-comics-${{ github.sha }}.tar.gz
+      path: hvc-comics.tar.gz
 
 
 deploy:
@@ -57,11 +57,11 @@ steps:
     env:
       AWS_EC2_SSH_KEY: ${{ secrets.AWS_EC2_SSH_KEY }}
       AWS_EC2_HOST: ${{ secrets.AWS_EC2_HOST }}
-      AWS_EC2_USER: ${{ secrets.AWS_EC2_USER }}
     run: |
       mkdir -p ~/.ssh
 
       printf '%s\n' "$AWS_EC2_SSH_KEY" > ~/.ssh/aws_ec2_key
+
       chmod 600 ~/.ssh/aws_ec2_key
 
       ssh-keyscan -H "$AWS_EC2_HOST" >> ~/.ssh/known_hosts
@@ -73,8 +73,8 @@ steps:
     run: |
       scp \
         -i ~/.ssh/aws_ec2_key \
-        hvc-comics-${{ github.sha }}.tar.gz \
-        "$AWS_EC2_USER@$AWS_EC2_HOST:/tmp/"
+        hvc-comics.tar.gz \
+        "$AWS_EC2_USER@$AWS_EC2_HOST:/tmp/hvc-comics.tar.gz"
 
   - name: Deploy on EC2
     env:
@@ -89,38 +89,77 @@ steps:
       set -e
 
       APP_DIR="/var/www/hvc-comics"
-      PACKAGE="/tmp/hvc-comics-${{ github.sha }}.tar.gz"
-      RELEASE_DIR="$APP_DIR/releases/${{ github.sha }}"
+      PACKAGE="/tmp/hvc-comics.tar.gz"
 
-      echo "Creating release directory..."
-      sudo mkdir -p "$RELEASE_DIR"
+      echo "Checking application directory..."
 
-      echo "Extracting application..."
-      sudo tar -xzf "$PACKAGE" -C "$RELEASE_DIR"
+      if [ ! -d "$APP_DIR" ]; then
+          echo "ERROR: Application directory not found:"
+          echo "$APP_DIR"
+          exit 1
+      fi
 
-      echo "Removing deployment package..."
-      rm -f "$PACKAGE"
+      echo "Checking Comics.json..."
+
+      if [ ! -f "$APP_DIR/Data/Comics.json" ]; then
+          echo "ERROR: Data/Comics.json not found."
+          echo "Deployment aborted to protect the existing data."
+          exit 1
+      fi
+
+      echo "Creating temporary deployment directory..."
+
+      TMP_DIR=$(mktemp -d)
+
+      echo "Extracting package..."
+
+      tar -xzf "$PACKAGE" -C "$TMP_DIR"
 
       echo "Stopping application..."
+
       sudo systemctl stop hvc-comics
 
-      echo "Updating current release..."
-      sudo rm -f "$APP_DIR/current"
-      sudo ln -s "$RELEASE_DIR" "$APP_DIR/current"
+      echo "Updating application files..."
+
+      find "$TMP_DIR" -mindepth 1 -maxdepth 1 ! -name Data -exec cp -a {} "$APP_DIR/" \;
+
+      echo "Updating application Data directory..."
+
+      if [ -d "$TMP_DIR/Data" ]; then
+          find "$TMP_DIR/Data" -mindepth 1 ! -name Comics.json -exec cp -a {} "$APP_DIR/Data/" \;
+      fi
 
       echo "Starting application..."
+
       sudo systemctl start hvc-comics
 
       echo "Checking application status..."
-      sudo systemctl is-active --quiet hvc-comics
 
-      echo "Deployment completed successfully."
+      if ! sudo systemctl is-active --quiet hvc-comics; then
+          echo "ERROR: Application failed to start."
+
+          sudo journalctl \
+            -u hvc-comics \
+            -n 50 \
+            --no-pager
+
+          rm -rf "$TMP_DIR"
+
+          exit 1
+      fi
+
+      echo "Cleaning temporary files..."
+
+      rm -rf "$TMP_DIR"
+      rm -f "$PACKAGE"
+
+      echo "=========================================="
+      echo "HVC-Comics AWS deployment completed"
+      echo "=========================================="
 
       REMOTE_SCRIPT
 
   - name: Deployment summary
     run: |
-      echo "=========================================="
-      echo "HVC-Comics AWS deployment completed"
+      echo "AWS EC2 deployment completed successfully."
       echo "Commit: ${{ github.sha }}"
-      echo "=========================================="
