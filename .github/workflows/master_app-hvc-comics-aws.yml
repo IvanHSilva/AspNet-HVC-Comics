@@ -33,26 +33,32 @@ jobs:
       - name: Show .NET version
         run: dotnet --info
 
+      # --------------------------------------------------------
+      # RESTORE
+      # --------------------------------------------------------
+
       - name: Restore
         run: |
-          set -e
-
           dotnet restore \
             HVC-Comics/HVC-Comics.csproj
 
+      # --------------------------------------------------------
+      # BUILD
+      # --------------------------------------------------------
+
       - name: Build
         run: |
-          set -e
-
           dotnet build \
             HVC-Comics/HVC-Comics.csproj \
             --configuration Release \
             --no-restore
 
+      # --------------------------------------------------------
+      # PUBLISH
+      # --------------------------------------------------------
+
       - name: Publish
         run: |
-          set -e
-
           dotnet publish \
             HVC-Comics/HVC-Comics.csproj \
             --configuration Release \
@@ -71,32 +77,15 @@ jobs:
           echo "Published files"
           echo "=========================================="
 
-          find ./publish \
-            -maxdepth 2 \
-            -type f \
-            | sort
+          find ./publish -maxdepth 2 -type f | sort
 
           echo ""
           echo "Publish size:"
+
           du -sh ./publish
 
       # --------------------------------------------------------
-      # REMOVE SERVER DATA
-      #
-      # Data/ is maintained exclusively on the EC2 server.
-      # Comics.json is NOT part of the deployment artifact.
-      # --------------------------------------------------------
-
-      - name: Remove server data from artifact
-        run: |
-          set -e
-
-          rm -rf ./publish/Data
-
-          echo "Data directory removed from deployment artifact."
-
-      # --------------------------------------------------------
-      # CREATE ARCHIVE
+      # CREATE DEPLOYMENT ARCHIVE
       # --------------------------------------------------------
 
       - name: Create deployment archive
@@ -116,8 +105,7 @@ jobs:
           echo ""
           echo "Archive contents:"
 
-          tar -tzf hvc-comics.tar.gz \
-            | head -100
+          tar -tzf hvc-comics.tar.gz | head -100
 
       # --------------------------------------------------------
       # UPLOAD ARTIFACT
@@ -159,7 +147,6 @@ jobs:
       # --------------------------------------------------------
 
       - name: Verify artifact
-        shell: bash
         run: |
           set -e
 
@@ -177,9 +164,7 @@ jobs:
           echo "Archive is valid."
 
       # --------------------------------------------------------
-      # CONFIGURE SSH
-      #
-      # AWS_EC2_HOST should contain the Elastic IP.
+      # SSH
       # --------------------------------------------------------
 
       - name: Configure SSH
@@ -198,14 +183,12 @@ jobs:
           echo "SSH key configured."
 
       # --------------------------------------------------------
-      # TEST SSH
+      # SSH TEST
       # --------------------------------------------------------
 
       - name: Test SSH connection
         shell: bash
         run: |
-          set -e
-
           ssh \
             -i ~/.ssh/hvc-comics-key \
             -o StrictHostKeyChecking=no \
@@ -307,33 +290,6 @@ jobs:
           echo "Archive is valid."
 
           # ----------------------------------------------------
-          # Verify persistent Data directory
-          #
-          # Data is NOT part of the deployment.
-          # It remains untouched during deployment.
-          # ----------------------------------------------------
-
-          echo "Checking persistent Data directory..."
-
-          if [ -d "$PUBLISH_DIR/Data" ]; then
-
-              echo "Persistent Data directory exists."
-
-              if [ -f "$PUBLISH_DIR/Data/Comics.json" ]; then
-                  echo "Comics.json exists."
-              else
-                  echo "WARNING: Comics.json does not currently exist."
-              fi
-
-          else
-
-              echo "WARNING: Data directory does not currently exist."
-
-              sudo mkdir -p "$PUBLISH_DIR/Data"
-
-          fi
-
-          # ----------------------------------------------------
           # Stop application
           # ----------------------------------------------------
 
@@ -346,13 +302,14 @@ jobs:
           # ----------------------------------------------------
           # Remove old application files
           #
-          # IMPORTANT:
-          # Data directory is intentionally preserved.
+          # Data directory is intentionally excluded.
+          #
+          # Nothing inside Data is modified.
           # ----------------------------------------------------
 
           echo "Cleaning old application files..."
 
-          find "$PUBLISH_DIR" \
+          sudo find "$PUBLISH_DIR" \
             -mindepth 1 \
             -maxdepth 1 \
             ! -name "Data" \
@@ -366,34 +323,14 @@ jobs:
 
           echo "Extracting new application..."
 
-          tar \
+          sudo tar \
             -xzf "$ARCHIVE" \
             -C "$PUBLISH_DIR"
 
           echo "New application extracted."
 
           # ----------------------------------------------------
-          # Verify persistent data after deployment
-          # ----------------------------------------------------
-
-          echo "Verifying persistent Data directory..."
-
-          if [ -d "$PUBLISH_DIR/Data" ]; then
-              echo "Data directory preserved."
-          else
-              echo "ERROR: Data directory is missing."
-              exit 1
-          fi
-
-          if [ -f "$PUBLISH_DIR/Data/Comics.json" ]; then
-              echo "Comics.json preserved successfully."
-              ls -lh "$PUBLISH_DIR/Data/Comics.json"
-          else
-              echo "WARNING: Comics.json is missing."
-          fi
-
-          # ----------------------------------------------------
-          # Permissions
+          # Application ownership
           # ----------------------------------------------------
 
           echo "Setting application ownership..."
@@ -459,26 +396,6 @@ jobs:
           echo "Application is running."
 
           # ----------------------------------------------------
-          # Final Comics.json check
-          # ----------------------------------------------------
-
-          echo "Checking Comics.json..."
-
-          if [ -f "$PUBLISH_DIR/Data/Comics.json" ]; then
-
-              echo "Comics.json exists."
-
-              ls -lh \
-                "$PUBLISH_DIR/Data/Comics.json"
-
-          else
-
-              echo ""
-              echo "WARNING: Comics.json is missing."
-
-          fi
-
-          # ----------------------------------------------------
           # Cleanup
           # ----------------------------------------------------
 
@@ -492,3 +409,4 @@ jobs:
           echo "=========================================="
 
           REMOTE_SCRIPT
+          
