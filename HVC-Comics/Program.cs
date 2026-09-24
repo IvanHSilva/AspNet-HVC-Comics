@@ -2,7 +2,14 @@ using HVC_Comics.Configuration;
 using HVC_Comics.Data;
 using HVC_Comics.Repositories;
 
+using System.Globalization;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Culture info
+var culture = new CultureInfo("pt-BR");
+CultureInfo.DefaultThreadCurrentCulture = culture;
+CultureInfo.DefaultThreadCurrentUICulture = culture;
 
 // OS Configuration
 var platformConfig = OperatingSystem.IsWindows()

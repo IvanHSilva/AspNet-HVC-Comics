@@ -22,7 +22,7 @@ public class DBConnectionController(
         catch (Exception ex)
         {
             return Content(
-                $"Erro ao conectar ao SQL Server: {ex.Message}");
+                $"Erro ao conectar ao Banco de Dados: {ex.Message}");
         }
     }
 }

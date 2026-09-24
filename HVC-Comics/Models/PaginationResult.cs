@@ -13,5 +13,5 @@ public class PaginationResult<T>
     public string DataSource { get; set; } = string.Empty;
 
     public int TotalPages =>
-        (int)Math.Ceiling((double)TotalRecords / PageSize);
+    Math.Max(1, (int)Math.Ceiling((double)TotalRecords / PageSize));
 }
