@@ -1,52 +1,246 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
+# Docs for the Azure Web Apps Deploy action:
+# https://github.com/Azure/webapps-deploy
+#
+# More GitHub Actions for Azure:
+# https://github.com/Azure/actions
 
-name: Build and deploy ASP.Net Core app to Azure Web App - app-hvc-comics
+name: Build and deploy ASP.NET Core app to Azure Web App - app-hvc-comics
 
 on:
   push:
     branches:
       - master
+
   workflow_dispatch:
 
 jobs:
+
+  # ============================================================
+  # BUILD
+  # ============================================================
+
   build:
+    name: Build and Publish
     runs-on: windows-latest
+
     permissions:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
 
-      - name: Set up .NET Core
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------------
+      # .NET
+      # --------------------------------------------------------
+
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.x'
 
-      - name: Build with dotnet
-        run: dotnet build HVC-Comics/HVC-Comics.csproj --configuration Release
+      - name: Show .NET version
+        run: dotnet --info
 
-      - name: dotnet publish
-        run: dotnet publish HVC-Comics/HVC-Comics.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+      # --------------------------------------------------------
+      # RESTORE
+      # --------------------------------------------------------
 
-      - name: Upload artifact for deployment job
+      - name: Restore
+        run: |
+          dotnet restore `
+            HVC-Comics/HVC-Comics.csproj
+
+      # --------------------------------------------------------
+      # BUILD
+      # --------------------------------------------------------
+
+      - name: Build
+        run: |
+          dotnet build `
+            HVC-Comics/HVC-Comics.csproj `
+            --configuration Release `
+            --no-restore
+
+      # --------------------------------------------------------
+      # PUBLISH
+      #
+      # Comics.json is excluded by the .csproj:
+      #
+      # <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+      #
+      # Therefore Data/Comics.json is NOT included in publish.
+      # --------------------------------------------------------
+
+      - name: Publish
+        run: |
+          dotnet publish `
+            HVC-Comics/HVC-Comics.csproj `
+            --configuration Release `
+            --no-build `
+            --output "${{ github.workspace }}\publish"
+
+      # --------------------------------------------------------
+      # VERIFY PUBLISH
+      # --------------------------------------------------------
+
+      - name: Verify publish
+        shell: pwsh
+        run: |
+          $publish = "${{ github.workspace }}\publish"
+
+          Write-Host "=========================================="
+          Write-Host "Published files"
+          Write-Host "=========================================="
+
+          Get-ChildItem `
+            -Path $publish `
+            -Recurse `
+            -File |
+            Sort-Object FullName |
+            Select-Object FullName
+
+          Write-Host ""
+          Write-Host "Publish size:"
+
+          $size = (
+            Get-ChildItem `
+              -Path $publish `
+              -Recurse `
+              -File |
+            Measure-Object -Property Length -Sum
+          ).Sum
+
+          "{0:N2} MB" -f ($size / 1MB)
+
+          Write-Host ""
+          Write-Host "Checking Comics.json..."
+
+          $comicsFile = Join-Path $publish "Data\Comics.json"
+
+          if (Test-Path $comicsFile) {
+            Write-Error "ERROR: Comics.json was included in the publish output."
+            exit 1
+          }
+
+          Write-Host "OK: Comics.json is NOT included in the deployment."
+
+      # --------------------------------------------------------
+      # CREATE ZIP
+      # --------------------------------------------------------
+
+      - name: Create deployment package
+        shell: pwsh
+        run: |
+          $publish = "${{ github.workspace }}\publish"
+          $package = "${{ github.workspace }}\hvc-comics.zip"
+
+          if (Test-Path $package) {
+            Remove-Item $package -Force
+          }
+
+          Compress-Archive `
+            -Path "$publish\*" `
+            -DestinationPath $package `
+            -Force
+
+          Write-Host "=========================================="
+          Write-Host "Deployment package"
+          Write-Host "=========================================="
+
+          Get-Item $package |
+            Select-Object Name, Length
+
+      # --------------------------------------------------------
+      # UPLOAD ARTIFACT
+      # --------------------------------------------------------
+
+      - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
         with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          name: hvc-comics-azure
+          path: ${{ github.workspace }}/hvc-comics.zip
+
+
+  # ============================================================
+  # DEPLOY
+  # ============================================================
 
   deploy:
+    name: Deploy to Azure Web App
+
     runs-on: windows-latest
+
     needs: build
+
     permissions:
       id-token: write
       contents: read
 
     steps:
-      - name: Download artifact from build job
+
+      # --------------------------------------------------------
+      # DOWNLOAD ARTIFACT
+      # --------------------------------------------------------
+
+      - name: Download deployment artifact
         uses: actions/download-artifact@v4
         with:
-          name: .net-app
+          name: hvc-comics-azure
+
+      # --------------------------------------------------------
+      # VERIFY ARTIFACT
+      # --------------------------------------------------------
+
+      - name: Verify deployment package
+        shell: pwsh
+        run: |
+          $package = "${{ github.workspace }}\hvc-comics.zip"
+
+          Write-Host "=========================================="
+          Write-Host "Deployment package"
+          Write-Host "=========================================="
+
+          if (-not (Test-Path $package)) {
+            Write-Error "Deployment package not found."
+            exit 1
+          }
+
+          Get-Item $package |
+            Select-Object Name, Length
+
+          Write-Host ""
+          Write-Host "Checking package contents..."
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($package)
+
+          try {
+
+            $comics = $zip.Entries |
+              Where-Object {
+                $_.FullName -match '(^|/)Data/Comics\.json$'
+              }
+
+            if ($comics) {
+              Write-Error "ERROR: Comics.json exists inside the deployment package."
+              exit 1
+            }
+
+            Write-Host "OK: Comics.json is not present in the package."
+
+          }
+          finally {
+
+            $zip.Dispose()
+
+          }
+
+      # --------------------------------------------------------
+      # LOGIN AZURE
+      # --------------------------------------------------------
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -55,10 +249,14 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_A65E51AAFF9E4B78A5CEFC2D4485A555 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_62DD59A9D20E442E988B0D25DB87D616 }}
 
+      # --------------------------------------------------------
+      # DEPLOY
+      # --------------------------------------------------------
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'app-hvc-comics'
           slot-name: 'Production'
-          package: .
+          package: ${{ github.workspace }}/hvc-comics.zip
