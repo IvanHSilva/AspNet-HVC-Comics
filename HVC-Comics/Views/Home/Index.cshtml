@@ -1,8 +1,310 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model HVC_Comics.Models.Comic?
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/home.css" />
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@{
+    ViewData["Title"] = "Comics Database";
+
+    string? coverUrl = null;
+    string name = "";
+    string displayName = "";
+    string publisher = "";
+    string licensor = "";
+
+    string FixTitle(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return text ?? "";
+
+        text = text.Trim();
+
+        // 1. Padrão clássico no final
+        var endSuffixes = new[] { ", a", ", o", ", as", ", os", ", um", ", uma" };
+
+        foreach (var suffix in endSuffixes)
+        {
+            if (text.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                var article = suffix[2..].Trim();
+                var main = text[..^suffix.Length].Trim();
+                return $"{char.ToUpper(article[0])}{article[1..]} {main}";
+            }
+        }
+
+        // 2. Padrão no meio (antes de " / ")
+        foreach (var suffix in endSuffixes)
+        {
+            var pattern = suffix + " / ";
+            var index = text.IndexOf(pattern, StringComparison.OrdinalIgnoreCase);
+
+            if (index > 0)
+            {
+                var article = suffix[2..].Trim();
+                var before = text[..index].Trim();
+                var after = text[(index + pattern.Length)..].Trim();
+
+                return $"{char.ToUpper(article[0])}{article[1..]} {before} / {after}";
+            }
+        }
+
+        return text;
+    }
+
+    if (Model is not null)
+    {
+        name = (Model.Name ?? "").Trim();
+        displayName = FixTitle(name);
+        publisher = (Model.Publisher ?? "").Trim();
+        licensor = (Model.Licensor ?? "").Trim();
+
+        var number = Model.Number.ToString("D2");
+
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            char first = name[0];
+            string folder = char.IsDigit(first) ? "#" : char.ToUpperInvariant(first).ToString();
+            string fileName = $"{name} {number}.jpg";
+            coverUrl = $"/capas/{folder}/{fileName}";
+        }
+    }
+
+    // Fundo especial para revistas de info / guias
+    var editorClass =
+        name.Contains("Super-Heróis", StringComparison.OrdinalIgnoreCase) ||
+        name.Contains("Wizard", StringComparison.OrdinalIgnoreCase) ||
+        name.Contains("Wizmania", StringComparison.OrdinalIgnoreCase)
+            ? "edit-info"
+        : licensor.Contains("Marvel", StringComparison.OrdinalIgnoreCase) ? "edit-marvel"
+        : licensor.Contains("DC", StringComparison.OrdinalIgnoreCase) ? "edit-dc"
+                                                                          : "edit-outra";
+
+    List<string> GetLogos(string? value)
+    {
+        var logos = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(value))
+            return logos;
+
+        // Separa por "/" e também por ","
+        var parts = value.Split(new[] { '/', ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        foreach (var part in parts)
+        {
+            var logo = part switch
+            {
+                var n when n.Contains("Marvel", StringComparison.OrdinalIgnoreCase) => "~/img/logo-marvel.png",
+                var n when n.Contains("DC", StringComparison.OrdinalIgnoreCase) => "~/img/logo-dc.png",
+                var n when n.Contains("Panini", StringComparison.OrdinalIgnoreCase) => "~/img/logo-panini.png",
+                var n when n.Contains("Image", StringComparison.OrdinalIgnoreCase) => "~/img/logo-image.png",
+                var n when n.Contains("Dark Horse", StringComparison.OrdinalIgnoreCase) => "~/img/logo-dark-horse.png",
+                var n when n.Contains("IDW", StringComparison.OrdinalIgnoreCase) => "~/img/logo-idw.png",
+                var n when n.Contains("Boom", StringComparison.OrdinalIgnoreCase) => "~/img/logo-boom-studios.png",
+                var n when n.Contains("Dynamite", StringComparison.OrdinalIgnoreCase) => "~/img/logo-dynamite.png",
+                var n when n.Contains("Avatar", StringComparison.OrdinalIgnoreCase) => "~/img/logo-avatar.png",
+                var n when n.Contains("Aspen", StringComparison.OrdinalIgnoreCase) => "~/img/logo-aspen.png",
+                var n when n.Contains("Top Cow", StringComparison.OrdinalIgnoreCase) => "~/img/logo-top-cow.png",
+                var n when n.Contains("Virgin", StringComparison.OrdinalIgnoreCase) => "~/img/logo-virgin.png",
+                var n when n.Contains("Dreamwave", StringComparison.OrdinalIgnoreCase) => "~/img/logo-dreamwave.png",
+                var n when n.Contains("Activision", StringComparison.OrdinalIgnoreCase) => "~/img/logo-activision.png",
+                var n when n.Contains("Europa", StringComparison.OrdinalIgnoreCase) => "~/img/logo-europa.png",
+                _ => null
+            };
+
+            if (logo is not null && !logos.Contains(logo))
+                logos.Add(logo);
+        }
+
+        return logos;
+    }
+
+    var publisherLogos = GetLogos(publisher);
+    var licensorLogos = GetLogos(licensor);
+
+    var statusClass =
+        Model?.ComicSituation?.Contains("encerr", StringComparison.OrdinalIgnoreCase) == true ? "info-status-ended" :
+        Model?.ComicSituation?.Contains("public", StringComparison.OrdinalIgnoreCase) == true ? "info-status-published" :
+                                                                                              "info-status-special";
+}
+
+<div class="home-page">
+
+    @if (Model is null)
+    {
+        <section class="random-empty">
+            <div class="random-icon">🎲</div>
+            <h1>Comics Database</h1>
+            <p>Não foi possível encontrar uma revista.</p>
+            <a asp-controller="Home" asp-action="Index" class="comic-button">
+                Tentar novamente
+            </a>
+        </section>
+    }
+    else
+    {
+        <article class="comic-card @editorClass">
+
+            <div class="comic-cover-container">
+                @if (!string.IsNullOrWhiteSpace(coverUrl))
+                {
+                    <img src="@coverUrl" alt="Capa de @Model.Name nº @Model.Number" class="comic-cover" loading="eager"
+                         width="330" height="500" />
+                }
+                else
+                {
+                    <div class="comic-cover-placeholder">
+                        <span>📚</span>
+                        <small>Sem capa disponível</small>
+                    </div>
+                }
+            </div>
+
+            <div class="comic-information">
+
+                <div class="comic-heading">
+                    
+                    <div class="comic-heading-title">
+                        <h1>
+                            @displayName #@Model.Number.ToString("D2")
+                            <span class="comic-id">@Model.Id</span>
+                        </h1>
+                    </div>
+
+                    <div class="comic-heading-logos">
+                        @foreach (var logo in publisherLogos.Concat(licensorLogos).Distinct())
+                        {
+                            var isSmall = logo.Contains("marvel", StringComparison.OrdinalIgnoreCase) ||
+                                          logo.Contains("panini", StringComparison.OrdinalIgnoreCase) ||
+                                          logo.Contains("activision", StringComparison.OrdinalIgnoreCase) ||
+                                          logo.Contains("dynamite", StringComparison.OrdinalIgnoreCase);
+
+                            <img src="@logo" asp-append-version="true"
+                                 class="publisher-logo @(isSmall ? "logo-small" : null)" />
+                        }
+
+                        @if (publisherLogos.Count == 0 && licensorLogos.Count == 0)
+                        {
+                            @if (!string.IsNullOrWhiteSpace(Model.Publisher))
+                            {
+                                <strong class="publisher-fallback">@Model.Publisher</strong>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.Licensor))
+                            {
+                                <strong class="publisher-fallback">@Model.Licensor</strong>
+                            }
+                        }
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.ComicTitle) &&
+                    !Model.ComicTitle.Equals("Nenhum", StringComparison.OrdinalIgnoreCase))
+                {
+                    <h2 class="comic-title">@FixTitle(Model.ComicTitle)</h2>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.CoverChar))
+                {
+                    <p class="comic-cover-char">@Model.CoverChar</p>
+                }
+
+                <div class="comic-info-row">
+                    <div class="comic-info-item info-published">
+                        <span>Publicado em</span>
+                        <strong>@Model.ComicMonth/@Model.ComicYear</strong>
+                    </div>
+
+                    <div class="comic-info-item info-price">
+                        <span>Preço</span>
+                        <strong>@Model.Coin @Model.Price.ToString("N2")</strong>
+                    </div>
+
+                    <div class="comic-info-item info-frequency">
+                        <span>Periodicidade</span>
+                        <strong>@Model.Frequency</strong>
+                    </div>
+
+                    <div class="comic-info-item @statusClass">
+                        <span>Status</span>
+                        <strong>@Model.ComicSituation</strong>
+                    </div>
+                </div>
+
+                <div class="comic-info-row comic-info-row-green">
+                    <div class="comic-info-item">
+                        <span>Formato</span>
+                        <strong>@Model.Format</strong>
+                    </div>
+                    <div class="comic-info-item">
+                        <span>Número de páginas</span>
+                        <strong>@Model.Pages</strong>
+                    </div>
+                    <div class="comic-info-item">
+                        <span>Histórias</span>
+                        <strong>@Model.Stories</strong>
+                    </div>
+                    <div class="comic-info-item">
+                        <span>Matérias</span>
+                        <strong>@Model.Articles</strong>
+                    </div>
+                </div>
+
+                <div class="comic-info-row comic-info-row-three">
+                    <div class="comic-info-item">
+                        <span>Papel</span>
+                        <strong>@Model.PaperType</strong>
+                    </div>
+                    <div class="comic-info-item">
+                        <span>Lombada</span>
+                        <strong>@Model.Binding</strong>
+                    </div>
+                    <div class="comic-info-item">
+                        <span>Tipo de capa</span>
+                        <strong>@Model.CoverType</strong>
+                    </div>
+                </div>
+
+                <div class="comic-flags">
+                    @if (Model.HaveMail)
+                    {
+                        <span>✉️ Correio</span>
+                    }
+                    @if (Model.HaveChecklist)
+                    {
+                        <span>☑️ Checklist</span>
+                    }
+                    @if (Model.IsBook)
+                    {
+                        <span>📚 Encadernado</span>
+                    }
+                    @if (Model.IsReedition)
+                    {
+                        <span>🔄 Reedição</span>
+                    }
+                    @if (Model.IsCrossover)
+                    {
+                        <span>🔀 Crossover</span>
+                    }
+                    @if (Model.IsBlackWhite)
+                    {
+                        <span>⚫ Preto e branco</span>
+                    }
+                    @if (Model.IsLastEdition)
+                    {
+                        <span>⭐ Última edição</span>
+                    }
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.ComicCall) &&
+                     !Model.ComicCall.Equals("Nenhuma", StringComparison.OrdinalIgnoreCase))
+                {
+                    <div class="comic-call">
+                        <span>@FixTitle(Model.ComicCall)</span>
+                    </div>
+                }
+
+            </div>
+        </article>
+    }
 </div>
+

@@ -168,7 +168,7 @@ public class PostgreSqlComicRepository(
                 IsCrossover = reader.GetBoolean(37),
                 IsPhisic = reader.GetBoolean(38),
                 IsDigital = reader.GetBoolean(39),
-                IsBlackWithe = reader.GetBoolean(40),
+                IsBlackWhite = reader.GetBoolean(40),
 
                 RegServer = reader.GetString(41)
             });

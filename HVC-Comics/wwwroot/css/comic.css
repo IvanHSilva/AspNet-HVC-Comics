@@ -1,125 +1,39 @@
-.comic-header {
-    margin-bottom: 20px;
-}
+/* =========================================
+   CARD DA REVISTA
+   ========================================= */
 
-.comic-header h1 {
-    font-size: 2rem;
-    font-weight: 600;
-    color: #1f2937;
-}
-
-/* Barra de informações */
-
-.comic-info-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #fff;
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 12px;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, .08);
-}
-
-.comic-info-left {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-}
-
-.comic-info-left span {
-    white-space: nowrap;
-}
-
-.comic-info-right .badge {
-    background-color: #0d6efd !important;
-    color: #fff;
-    padding: 8px 14px;
-    font-size: .85rem;
-    border-radius: 20px;
-}
-
-
-/* Tabela */
-
-.comic-table-container {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.comic-table {
+.comic-card {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 28px;
 
     width: 100%;
-    background: #fff;
-    border-collapse: collapse;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, .08);
+    max-width: 1100px;
+
+    margin: 0 auto;
+    padding: 28px;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.10);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
-.comic-table th {
+.comic-card:hover {
+    transform: translateY(-2px);
 
-    background: #212529;
-    color: #fff;
-    padding: 12px;
-    text-align: center;
-    font-size: .85rem;
-}
-
-
-.comic-table td {
-
-    padding: 12px;
-    border-bottom: 1px solid #eee;
-    vertical-align: middle;
-}
-
-
-.comic-table tbody tr:hover {
-
-    background-color: #f8f9fa;
+    box-shadow:
+        0 14px 35px rgba(0, 0, 0, 0.14);
 }
 
 
-.comic-table td:first-child {
-
-    color: #0d6efd;
-    font-weight: bold;
-
-}
-
-
-.comic-table td:last-child {
-
-    color: #198754;
-    font-weight: bold;
-}
-
-
-.text-center {
-
-    text-align: center;
-}
-
-
-/* Paginação */
-
-.pagination {
-
-    margin-top: 25px;
-}
-
-
-.page-link {
-
-    font-size: .80rem;
-    padding: 5px 9px;
-    border-radius: 8px !important;
-}
-
-
-/* Cores por Editora / Revistas */
+/* =========================================
+   CORES POR EDITORA
+   ========================================= */
 
 .edit-marvel {
     background-color: #dcfce7 !important;
@@ -137,193 +51,347 @@
     background-color: #dbeafe !important;
 }
 
-.comic-table tbody tr:hover {
-    filter: brightness(0.95);
+
+/* =========================================
+   CAPA
+   ========================================= */
+
+.comic-cover-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.comic-cover {
+    display: block;
+
+    width: 100%;
+    max-width: 280px;
+    height: auto;
+
+    border-radius: 10px;
+
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.20);
+}
+
+.comic-cover-placeholder {
+    width: 100%;
+    min-height: 390px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 10px;
+
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
 }
 
 
-/* Smartphone Landscape 576px  */
+/* =========================================
+   ÁREA DE INFORMAÇÕES
+   ========================================= */
 
-@media (min-width:576px) {
-
-    .comic-info-bar {
-
-        padding: 18px;
-    }
-
-    .comic-table th {
-
-        font-size: .9rem;
-    }
+.comic-info {
+    min-width: 0;
 }
 
 
+/* =========================================
+   TÍTULO + NÚMERO
+   ========================================= */
 
-/* Tablet Portrait 768px  */
+.comic-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
 
-@media (min-width:768px) {
+    margin-bottom: 4px;
+}
 
-    .comic-table {
+.comic-heading h1 {
+    margin: 0;
 
-        min-width: 1000px;
-    }
+    font-size: clamp(1.7rem, 3vw, 2.5rem);
+    line-height: 1.1;
 
-    .comic-table-container {
+    font-weight: 800;
+}
 
-        overflow-x: auto;
-    }
+.comic-number {
+    flex-shrink: 0;
 
-    .page-link {
+    font-size: 1.5rem;
+    font-weight: 800;
 
-        font-size: .85rem;
-        padding: 7px 11px;
-    }
+    color: #374151;
 }
 
 
-/* Tablet Landscape 992px  */
+/* =========================================
+   TÍTULO DA EDIÇÃO
+   ========================================= */
 
-@media (min-width:992px) {
+.comic-title {
+    margin: 8px 0 2px;
 
-    .comic-table {
+    font-size: 1.25rem;
+    line-height: 1.3;
+}
 
-        min-width: auto;
-    }
+.comic-cover-char {
+    margin: 0 0 18px;
 
-    .comic-table th {
-
-        font-size: .95rem;
-    }
-
-    .page-link {
-
-        font-size: .9rem;
-    }
+    color: #4b5563;
+    font-size: 0.95rem;
 }
 
 
-/* PC 1200px  */
+/* =========================================
+   EDITORAS
+   ========================================= */
 
-@media (min-width:1200px) {
+.comic-publishers {
+    display: flex;
+    flex-wrap: wrap;
 
-    .comic-header h1 {
+    gap: 24px;
 
-        font-size: 2.3rem;
-    }
+    padding: 14px 0;
 
-    .comic-info-bar {
+    border-top: 1px solid rgba(0, 0, 0, 0.10);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.10);
+}
 
-        padding: 20px 25px;
-    }
+.publisher {
+    display: flex;
+    flex-direction: column;
 
-    .comic-table th {
+    align-items: flex-start;
 
-        padding: 15px;
-    }
+    min-width: 150px;
+}
 
-    .comic-table td {
+.publisher-label {
+    margin-bottom: 5px;
 
-        padding: 14px 16px;
-    }
+    font-size: 0.72rem;
+    font-weight: 700;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.06em;
+
+    color: #6b7280;
+}
+
+.publisher-logo {
+    display: block;
+
+    max-width: 135px;
+    max-height: 42px;
+
+    width: auto;
+    height: auto;
+
+    object-fit: contain;
+}
+
+.publisher strong {
+    font-size: 1rem;
 }
 
 
-/* Card Mobile Até 767px */
+/* =========================================
+   LINHAS DE DADOS
+   ========================================= */
 
-@media (max-width:767px) {
+.comic-data-row {
+    display: grid;
 
-    .comic-table,
-    .comic-table thead,
-    .comic-table tbody,
-    .comic-table tr,
-    .comic-table td {
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
 
-        display: block;
+    gap: 14px;
+
+    padding: 15px 0;
+
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.comic-technical-row {
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+}
+
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+
+    gap: 3px;
+
+    min-width: 0;
+}
+
+.info-item span:first-child {
+    font-size: 0.72rem;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.05em;
+
+    color: #6b7280;
+}
+
+.info-item strong {
+    font-size: 0.95rem;
+
+    color: #1f2937;
+
+    word-break: break-word;
+}
+
+
+/* =========================================
+   STATUS
+   ========================================= */
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+
+    width: fit-content;
+
+    padding: 4px 10px;
+
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.65);
+
+    font-size: 0.82rem !important;
+}
+
+
+/* =========================================
+   CARACTERÍSTICAS
+   ========================================= */
+
+.comic-flags {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    margin-top: 18px;
+}
+
+.comic-flags span {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 7px 11px;
+
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.65);
+
+    font-size: 0.82rem;
+    font-weight: 600;
+
+    color: #374151;
+}
+
+
+/* =========================================
+   CHAMADA
+   ========================================= */
+
+.comic-content {
+    width: 100%;
+    max-width: 1100px;
+
+    margin: 20px auto 0;
+}
+
+.content-block {
+    padding: 20px;
+
+    background: #dbeafe;
+
+    border-radius: 14px;
+}
+
+.content-block h3 {
+    margin-top: 0;
+}
+
+.content-block p {
+    margin-bottom: 0;
+}
+
+
+/* =========================================
+   RESPONSIVO
+   ========================================= */
+
+@media (max-width: 800px) {
+
+    .comic-card {
+        grid-template-columns: 1fr;
+
+        padding: 20px;
     }
 
-    .comic-table thead {
-
-        display: none;
-    }
-
-    .comic-table {
-
-        min-width: auto;
-        background: transparent;
-        box-shadow: none;
-    }
-
-    .comic-table tbody tr {
-
-        background: #fff;
-        margin-bottom: 20px;
-        padding: 15px;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, .10);
-    }
-
-    .comic-table td {
-
-        display: flex;
-        justify-content: space-between;
-        padding: 10px 5px;
-        text-align: right;
-    }
-
-    .comic-table td::before {
-
-        content: attr(data-label);
-        font-weight: 700;
-        color: #374151;
-        text-align: left;
-    }
-
-    .comic-table td:last-child {
-
-        border-bottom: none;
-    }
-
-    .comic-info-bar {
-
-        flex-direction: column;
-        gap: 45px;
-        text-align: center;
-    }
-
-    .comic-info-left {
-
+    .comic-cover-container {
         justify-content: center;
     }
 
-    .pagination {
+    .comic-cover {
+        max-width: 240px;
+    }
 
+    .comic-data-row,
+    .comic-technical-row {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+
+@media (max-width: 480px) {
+
+    .comic-card {
+        padding: 15px;
+
+        border-radius: 12px;
+    }
+
+    .comic-heading {
         flex-wrap: wrap;
-        gap: 2px;
     }
 
-    .page-link {
-
-        font-size: .75rem;
-        padding: 5px 7px;
+    .comic-heading h1 {
+        font-size: 1.7rem;
     }
 
-
-    @media (max-width:767px) {
-
-        .edit-marvel {
-            background-color: #dcfce7 !important;
-        }
-
-        .edit-dc {
-            background-color: #ffedd5 !important;
-        }
-
-        .edit-outra {
-            background-color: #fef9c3 !important;
-        }
-
-        .edit-info {
-            background-color: #dbeafe !important;
-        }
+    .comic-number {
+        font-size: 1.2rem;
     }
+
+    .comic-data-row,
+    .comic-technical-row {
+        grid-template-columns: 1fr;
+    }
+
+    .comic-publishers {
+        flex-direction: column;
+
+        gap: 15px;
+    }
+
 }

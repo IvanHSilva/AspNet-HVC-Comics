@@ -46,8 +46,7 @@ public class Comic
     public bool IsCrossover { get; set; }
     public bool IsPhisic { get; set; }
     public bool IsDigital { get; set; }
-    public bool IsBlackWithe { get; set; }
-
+    public bool IsBlackWhite { get; set; }
 
     public string RegServer { get; set; } = string.Empty;
 }

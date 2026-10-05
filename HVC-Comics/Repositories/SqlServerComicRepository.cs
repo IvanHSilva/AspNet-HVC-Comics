@@ -54,7 +54,7 @@ public class SqlServerComicRepository(
                 EditoraBR,
                 EditoraEUA,
                 NomeMesBR,
-                AnoREvBR,
+                AnoRevBR,
                 Preco
             FROM Revistas
             ORDER BY Codigo

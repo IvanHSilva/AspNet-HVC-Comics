@@ -1,24 +1,18 @@
-using System.Diagnostics;
+using HVC_Comics.Repositories;
 using Microsoft.AspNetCore.Mvc;
-using HVC_Comics.Models;
 
 namespace HVC_Comics.Controllers;
 
-public class HomeController : Controller
+public class HomeController(
+    JsonComicRepository repository) : Controller
 {
+    private readonly JsonComicRepository _repository = repository;
+
     public IActionResult Index()
     {
-        return View();
-    }
+        var comic = _repository.GetRandom();
+        //var comic = _repository.GetById(1);
 
-    public IActionResult Privacy()
-    {
-        return View();
-    }
-
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        return View(comic);
     }
 }

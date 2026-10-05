@@ -3,6 +3,7 @@ using HVC_Comics.Data;
 using HVC_Comics.Repositories;
 
 using System.Globalization;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,9 +42,11 @@ switch (comicSource?.Trim().ToLowerInvariant())
 {
     case "json":
 
-        builder.Services.AddScoped<
-            IComicRepository,
-            JsonComicRepository>();
+        builder.Services.AddScoped<JsonComicRepository>();
+
+        builder.Services.AddScoped<IComicRepository>(
+            provider =>
+                provider.GetRequiredService<JsonComicRepository>());
 
         break;
 
@@ -93,6 +96,18 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+var coversPath = builder.Configuration["ComicCovers:Path"];
+
+if (!string.IsNullOrWhiteSpace(coversPath) &&
+    Directory.Exists(coversPath))
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(coversPath),
+        RequestPath = "/capas"
+    });
+}
 
 app.UseRouting();
 
