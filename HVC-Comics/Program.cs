@@ -1,9 +1,11 @@
 using HVC_Comics.Configuration;
 using HVC_Comics.Data;
 using HVC_Comics.Repositories;
+using HVC_Comics.Storage;
 
 using System.Globalization;
-using Microsoft.Extensions.FileProviders;
+
+using Amazon.S3;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +36,60 @@ builder.Services.AddMemoryCache();
 
 builder.Services.Configure<ComicDataOptions>(
     builder.Configuration.GetSection("ComicData"));
+
+builder.Services.AddDefaultAWSOptions(
+    builder.Configuration.GetAWSOptions());
+
+builder.Services.AddAWSService<IAmazonS3>();
+
+builder.Services.AddScoped<
+    IComicCoverStorage,
+    S3ComicCoverStorage>();
+
+// Covers
+var coverProvider =
+    builder.Configuration["ComicCovers:Provider"]
+        ?.Trim()
+        .ToLowerInvariant();
+
+switch (coverProvider)
+{
+    case "s3":
+
+        builder.Services.AddDefaultAWSOptions(
+            builder.Configuration.GetAWSOptions());
+
+        builder.Services.AddAWSService<IAmazonS3>();
+
+        builder.Services.AddScoped<
+            IComicCoverStorage,
+            S3ComicCoverStorage>();
+
+        break;
+
+    case "local":
+
+        var coversPath =
+            builder.Configuration["ComicCovers:Path"];
+
+        if (string.IsNullOrWhiteSpace(coversPath))
+        {
+            throw new InvalidOperationException(
+                "ComicCovers:Path não configurado.");
+        }
+
+        builder.Services.AddSingleton<IComicCoverStorage>(
+            new LocalComicCoverStorage(coversPath));
+
+        break;
+
+    default:
+
+        throw new InvalidOperationException(
+            $"Provider de capas '{coverProvider}' não suportado. " +
+            "Valores válidos: Local, S3.");
+}
+
 
 // Data Source
 var comicSource = builder.Configuration["ComicData:Source"];
@@ -96,18 +152,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-var coversPath = builder.Configuration["ComicCovers:Path"];
-
-if (!string.IsNullOrWhiteSpace(coversPath) &&
-    Directory.Exists(coversPath))
-{
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new PhysicalFileProvider(coversPath),
-        RequestPath = "/capas"
-    });
-}
 
 app.UseRouting();
 
