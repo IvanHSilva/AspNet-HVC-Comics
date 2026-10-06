@@ -9,9 +9,9 @@ using Microsoft.Extensions.Caching.Memory;
 namespace HVC_Comics.Repositories;
 
 public class JsonComicRepository(
-IComicDataStorage dataStorage,
-IMemoryCache cache,
-ILogger<JsonComicRepository> logger) : IComicRepository
+    IComicDataStorage dataStorage,
+    IMemoryCache cache,
+    ILogger<JsonComicRepository> logger) : IComicRepository
 {
     private const string CacheKey = "comics";
 
@@ -47,8 +47,8 @@ ILogger<JsonComicRepository> logger) : IComicRepository
             Items =
             [
                 .. comics
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
             ]
         };
     }
@@ -132,8 +132,8 @@ ILogger<JsonComicRepository> logger) : IComicRepository
             return
             [
                 .. source
-                .Select(ToComic)
-                .OrderBy(comic => comic.Id)
+                    .Select(ToComic)
+                    .OrderBy(comic => comic.Id)
             ];
         }
         catch (JsonException exception)
@@ -166,23 +166,15 @@ ILogger<JsonComicRepository> logger) : IComicRepository
 
             throw;
         }
-        // catch (Exception exception)
-        // {
-        //     _logger.LogError(
-        //         exception,
-        //         "Não foi possível carregar Comics.json.");
-
-        //     return [];
-        // }
     }
 
-    private static bool ToBool(string value)
+    private static DateOnly ParseDate(string? value)
     {
-        return value == "1";
-    }
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return default;
+        }
 
-    private static DateOnly ParseDate(string value)
-    {
         return DateOnly.TryParse(
             value,
             new CultureInfo("pt-BR"),
@@ -241,15 +233,16 @@ ILogger<JsonComicRepository> logger) : IComicRepository
 
             RegDate = ParseDate(source.DataCadastro),
 
-            IsLastEdition = ToBool(source.UltimaEdicao),
-            HaveMail = ToBool(source.Correio),
-            HaveChecklist = ToBool(source.Checklist),
-            IsBook = ToBool(source.Encadernado),
-            IsReedition = ToBool(source.Reedicao),
-            IsCrossover = ToBool(source.Crossover),
-            IsPhisic = ToBool(source.Fisica),
-            IsDigital = ToBool(source.Digital),
-            IsBlackWhite = ToBool(source.SemCores),
+            // O Comics.json utiliza true/false diretamente.
+            IsLastEdition = source.UltimaEdicao,
+            HaveMail = source.Correio,
+            HaveChecklist = source.Checklist,
+            IsBook = source.Encadernado,
+            IsReedition = source.Reedicao,
+            IsCrossover = source.Crossover,
+            IsPhisic = source.Fisica,
+            IsDigital = source.Digital,
+            IsBlackWhite = source.SemCores,
 
             RegServer = source.Servidor
         };
@@ -258,6 +251,7 @@ ILogger<JsonComicRepository> logger) : IComicRepository
     private sealed class ComicJson
     {
         public int Codigo { get; set; }
+
         public string RevistaBR { get; set; } = string.Empty;
         public int EdicaoBR { get; set; }
 
@@ -304,18 +298,17 @@ ILogger<JsonComicRepository> logger) : IComicRepository
 
         public string DataCadastro { get; set; } = string.Empty;
 
-        public string UltimaEdicao { get; set; } = string.Empty;
-        public string Correio { get; set; } = string.Empty;
-        public string Checklist { get; set; } = string.Empty;
-        public string Encadernado { get; set; } = string.Empty;
-        public string Reedicao { get; set; } = string.Empty;
-        public string Crossover { get; set; } = string.Empty;
-        public string Fisica { get; set; } = string.Empty;
-        public string Digital { get; set; } = string.Empty;
-        public string SemCores { get; set; } = string.Empty;
+        // O JSON utiliza booleanos true/false.
+        public bool UltimaEdicao { get; set; }
+        public bool Correio { get; set; }
+        public bool Checklist { get; set; }
+        public bool Encadernado { get; set; }
+        public bool Reedicao { get; set; }
+        public bool Crossover { get; set; }
+        public bool Fisica { get; set; }
+        public bool Digital { get; set; }
+        public bool SemCores { get; set; }
 
         public string Servidor { get; set; } = string.Empty;
     }
-
-
 }
