@@ -1,24 +1,24 @@
-using Microsoft.AspNetCore.Mvc;
 using HVC_Comics.Repositories;
+
+using Microsoft.AspNetCore.Mvc;
 
 namespace HVC_Comics.Controllers;
 
-public class ComicController(IComicRepository repository) : Controller
+public class ComicController(
+IComicRepository repository) : Controller
 {
     private readonly IComicRepository _repository = repository;
 
-    public IActionResult Index(int page = 1)
+    public async Task<IActionResult> Index(
+        int page = 1,
+        int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
-        var userAgent = Request.Headers.UserAgent.ToString();
-
-        int pageSize = 50;
-
-        if (userAgent.Contains("Mobile"))
-        {
-            pageSize = 10;
-        }
-
-        var result = _repository.GetPaged(page, pageSize);
+        var result =
+            await _repository.GetPagedAsync(
+                page,
+                pageSize,
+                cancellationToken);
 
         return View(result);
     }

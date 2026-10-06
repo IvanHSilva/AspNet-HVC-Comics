@@ -1,17 +1,20 @@
 using HVC_Comics.Repositories;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace HVC_Comics.Controllers;
 
 public class HomeController(
-    JsonComicRepository repository) : Controller
+IComicRepository repository) : Controller
 {
-    private readonly JsonComicRepository _repository = repository;
+    private readonly IComicRepository _repository = repository;
 
-    public IActionResult Index()
+    public async Task<IActionResult> Index(
+        CancellationToken cancellationToken)
     {
-        var comic = _repository.GetRandom();
-        //var comic = _repository.GetById(1);
+        var comic =
+            await _repository.GetRandomAsync(
+                cancellationToken);
 
         return View(comic);
     }

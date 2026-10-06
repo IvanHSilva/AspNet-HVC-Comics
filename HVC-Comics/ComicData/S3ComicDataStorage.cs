@@ -1,39 +1,34 @@
 using Amazon.S3;
 using Amazon.S3.Model;
 
-namespace HVC_Comics.Storage;
+namespace HVC_Comics.ComicData;
 
-public sealed class S3ComicCoverStorage : IComicCoverStorage
+public sealed class S3ComicDataStorage : IComicDataStorage
 {
     private readonly IAmazonS3 _s3;
     private readonly string _bucket;
-    private readonly string _prefix;
+    private readonly string _key;
 
-    public S3ComicCoverStorage(
+    public S3ComicDataStorage(
         IAmazonS3 s3,
         string bucket,
-        string prefix)
+        string key)
     {
         _s3 = s3;
         _bucket = bucket;
-        _prefix = prefix.TrimEnd('/');
+        _key = key;
     }
 
     public async Task<Stream?> GetAsync(
-        string path,
         CancellationToken cancellationToken = default)
     {
-        path = path.TrimStart('/');
-
-        var key = $"{_prefix}/{path}";
-
         try
         {
             var response = await _s3.GetObjectAsync(
                 new GetObjectRequest
                 {
                     BucketName = _bucket,
-                    Key = key
+                    Key = _key
                 },
                 cancellationToken);
 
@@ -46,5 +41,4 @@ public sealed class S3ComicCoverStorage : IComicCoverStorage
             return null;
         }
     }
-
 }

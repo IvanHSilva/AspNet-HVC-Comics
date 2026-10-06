@@ -1,39 +1,40 @@
-using System.Text.Json;
-using HVC_Comics.Models;
-using Microsoft.Extensions.Caching.Memory;
-
 using System.Globalization;
+using System.Text.Json;
+
+using HVC_Comics.ComicData;
+using HVC_Comics.Models;
+
+using Microsoft.Extensions.Caching.Memory;
 
 namespace HVC_Comics.Repositories;
 
 public class JsonComicRepository(
-    IConfiguration configuration,
-    IWebHostEnvironment environment,
-    IMemoryCache cache,
-    ILogger<JsonComicRepository> logger) : IComicRepository
+IComicDataStorage dataStorage,
+IMemoryCache cache,
+ILogger<JsonComicRepository> logger) : IComicRepository
 {
-    private readonly IConfiguration _configuration = configuration;
     private const string CacheKey = "comics";
 
-    private readonly IWebHostEnvironment _environment = environment;
+    private readonly IComicDataStorage _dataStorage = dataStorage;
     private readonly IMemoryCache _cache = cache;
     private readonly ILogger<JsonComicRepository> _logger = logger;
 
-    public PaginationResult<Comic> GetPaged(int page = 1, int pageSize = 50)
+    public async Task<PaginationResult<Comic>> GetPagedAsync(
+        int page = 1,
+        int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var comics = _cache.GetOrCreate(CacheKey, entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-            return LoadComics();
-        }) ?? [];
+        var comics = await GetComicsAsync(cancellationToken);
 
         var totalRecords = comics.Count;
+
         var totalPages = totalRecords == 0
             ? 1
-            : (int)Math.Ceiling((double)totalRecords / pageSize);
+            : (int)Math.Ceiling(
+                (double)totalRecords / pageSize);
 
         page = Math.Min(page, totalPages);
 
@@ -43,93 +44,103 @@ public class JsonComicRepository(
             PageSize = pageSize,
             TotalRecords = totalRecords,
             DataSource = "JSON",
-            Items = [.. comics
+            Items =
+            [
+                .. comics
                 .Skip((page - 1) * pageSize)
-                .Take(pageSize)]
+                .Take(pageSize)
+            ]
         };
     }
 
-    public Comic? GetRandom()
+    public async Task<Comic?> GetRandomAsync(
+        CancellationToken cancellationToken = default)
     {
-        var comics = GetComics();
+        var comics = await GetComicsAsync(cancellationToken);
 
         if (comics.Count == 0)
         {
             return null;
         }
 
-        var randomId = comics[
-            Random.Shared.Next(comics.Count)
-        ].Id;
+        var randomId =
+            comics[Random.Shared.Next(comics.Count)].Id;
 
-        return GetById(randomId);
+        return comics.FirstOrDefault(
+            comic => comic.Id == randomId);
     }
 
-    public Comic? GetById(int id)
+    public async Task<Comic?> GetByIdAsync(
+        int id,
+        CancellationToken cancellationToken = default)
     {
-        var comics = GetComics();
+        var comics = await GetComicsAsync(cancellationToken);
 
         return comics.FirstOrDefault(
             comic => comic.Id == id);
     }
 
-    private List<Comic> GetComics()
+    private async Task<List<Comic>> GetComicsAsync(
+        CancellationToken cancellationToken)
     {
-        return _cache.GetOrCreate(CacheKey, entry =>
+        if (_cache.TryGetValue(
+                CacheKey,
+                out List<Comic>? comics) &&
+            comics is not null)
         {
-            entry.AbsoluteExpirationRelativeToNow =
-                TimeSpan.FromMinutes(10);
+            return comics;
+        }
 
-            return LoadComics();
-        }) ?? [];
+        comics = await LoadComicsAsync(
+            cancellationToken);
+
+        _cache.Set(
+            CacheKey,
+            comics,
+            TimeSpan.FromMinutes(10));
+
+        return comics;
     }
 
-    private List<Comic> LoadComics()
+    private async Task<List<Comic>> LoadComicsAsync(
+        CancellationToken cancellationToken)
     {
-        var configuredFile = _configuration["ComicData:JsonFile"];
-
-        if (string.IsNullOrWhiteSpace(configuredFile))
-        {
-            _logger.LogWarning(
-                "O caminho do arquivo de backup JSON não foi configurado.");
-
-            return [];
-        }
-
-        var file = Path.IsPathRooted(configuredFile)
-            ? configuredFile
-            : Path.Combine(_environment.ContentRootPath, configuredFile);
-
-        if (!File.Exists(file))
-        {
-            _logger.LogWarning(
-                "O arquivo de backup JSON não foi encontrado: {File}",
-                file);
-
-            return [];
-        }
-
         try
         {
-            var json = File.ReadAllText(file);
+            await using var stream =
+                await _dataStorage.GetAsync(
+                    cancellationToken);
 
-            var source = JsonSerializer.Deserialize<List<ComicJson>>(
-                json,
-                new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                }) ?? [];
+            if (stream is null)
+            {
+                _logger.LogWarning(
+                    "Não foi possível localizar Comics.json.");
 
-            return [.. source
-            .Select(ToComic)
-            .OrderBy(comic => comic.Id)];
+                return [];
+            }
+
+            var source =
+                await JsonSerializer.DeserializeAsync<
+                    List<ComicJson>>(
+                        stream,
+                        new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        },
+                        cancellationToken) ?? [];
+
+            return
+            [
+                .. source
+                .Select(ToComic)
+                .OrderBy(comic => comic.Id)
+            ];
         }
         catch (JsonException exception)
         {
             _logger.LogWarning(
                 exception,
-                "O arquivo de backup JSON é inválido: {File}",
-                file);
+                "O arquivo Comics.json é inválido.");
 
             return [];
         }
@@ -137,8 +148,19 @@ public class JsonComicRepository(
         {
             _logger.LogWarning(
                 exception,
-                "Não foi possível ler o arquivo JSON: {File}",
-                file);
+                "Não foi possível ler Comics.json.");
+
+            return [];
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "Não foi possível carregar Comics.json.");
 
             return [];
         }
@@ -196,7 +218,6 @@ public class JsonComicRepository(
             ComicTitle = source.Titulo,
             ComicCall = source.Chamada,
 
-            // Ainda não existe imagem da capa no JSON.
             ComicCover = string.Empty,
 
             ComicNumber = source.CapaEdicaoEUA,
@@ -235,6 +256,7 @@ public class JsonComicRepository(
 
         public int MesRevBR { get; set; }
         public int AnoRevBR { get; set; }
+
         public string DataRevBR { get; set; } = string.Empty;
         public string NomeMesBR { get; set; } = string.Empty;
 
@@ -284,4 +306,6 @@ public class JsonComicRepository(
 
         public string Servidor { get; set; } = string.Empty;
     }
+
+
 }
