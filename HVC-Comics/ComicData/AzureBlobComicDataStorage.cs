@@ -1,3 +1,4 @@
+using Azure.Identity;
 using Azure.Storage.Blobs;
 
 namespace HVC_Comics.ComicData;
@@ -12,16 +13,41 @@ public sealed class AzureBlobComicDataStorage : IComicDataStorage
         string containerName,
         string blobName)
     {
+        if (string.IsNullOrWhiteSpace(accountName))
+        {
+            throw new ArgumentException(
+                "O nome da Storage Account não pode ser vazio.",
+                nameof(accountName));
+        }
+
+        if (string.IsNullOrWhiteSpace(containerName))
+        {
+            throw new ArgumentException(
+                "O nome do container não pode ser vazio.",
+                nameof(containerName));
+        }
+
+        if (string.IsNullOrWhiteSpace(blobName))
+        {
+            throw new ArgumentException(
+                "O nome do blob não pode ser vazio.",
+                nameof(blobName));
+        }
+
         var serviceUri =
             new Uri(
                 $"https://{accountName}.blob.core.windows.net");
 
-        _container =
-            new BlobContainerClient(
+        var serviceClient =
+            new BlobServiceClient(
                 serviceUri,
-                new Azure.Identity.DefaultAzureCredential());
+                new DefaultAzureCredential());
 
-        _blobName = blobName;
+        _container =
+            serviceClient.GetBlobContainerClient(
+                containerName);
+
+        _blobName = blobName.TrimStart('/');
     }
 
     public async Task<Stream?> GetAsync(
@@ -30,15 +56,18 @@ public sealed class AzureBlobComicDataStorage : IComicDataStorage
         var blob =
             _container.GetBlobClient(_blobName);
 
-        if (!await blob.ExistsAsync(cancellationToken))
+        try
+        {
+            var response =
+                await blob.DownloadStreamingAsync(
+                    cancellationToken: cancellationToken);
+
+            return response.Value.Content;
+        }
+        catch (Azure.RequestFailedException ex)
+            when (ex.Status == 404)
         {
             return null;
         }
-
-        var response =
-            await blob.DownloadStreamingAsync(
-                cancellationToken: cancellationToken);
-
-        return response.Value.Content;
     }
 }

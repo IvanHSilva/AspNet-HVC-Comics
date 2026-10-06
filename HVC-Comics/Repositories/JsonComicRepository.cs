@@ -160,10 +160,20 @@ ILogger<JsonComicRepository> logger) : IComicRepository
         {
             _logger.LogError(
                 exception,
-                "Não foi possível carregar Comics.json.");
+                "ERRO AO CARREGAR COMICS.JSON: {ExceptionType} - {Message}",
+                exception.GetType().FullName,
+                exception.Message);
 
-            return [];
+            throw;
         }
+        // catch (Exception exception)
+        // {
+        //     _logger.LogError(
+        //         exception,
+        //         "Não foi possível carregar Comics.json.");
+
+        //     return [];
+        // }
     }
 
     private static bool ToBool(string value)
