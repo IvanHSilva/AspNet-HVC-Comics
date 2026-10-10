@@ -1,0 +1,77 @@
+@model HVC_Comics.Models.PaginationResult<HVC_Comics.Models.Comic>
+
+@{
+    var userAgent = Context.Request.Headers["User-Agent"].ToString();
+
+    int visiblePages = userAgent.Contains(
+        "Mobile", StringComparison.OrdinalIgnoreCase) ? 7 : 20;
+
+    int totalPages = Model.TotalPages;
+    int currentPage = Model.CurrentPage;
+
+    int startPage = Math.Max(1, currentPage - (visiblePages / 2));
+    int endPage = Math.Min(totalPages, startPage + visiblePages - 1);
+
+    if (endPage - startPage < visiblePages - 1)
+    {
+        startPage = Math.Max(1, endPage - visiblePages + 1);
+    }
+}
+
+<ul class="pagination justify-content-center">
+
+    <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+        <a class="page-link" asp-action="Index" asp-route-page="1" aria-label="Primeira página">&laquo;</a>
+    </li>
+
+    <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+        <a class="page-link" asp-action="Index" asp-route-page="@(currentPage - 1)"
+           aria-label="Página anterior">&lsaquo;</a>
+    </li>
+
+    @if (startPage > 1)
+    {
+        <li class="page-item">
+            <a class="page-link" asp-action="Index" asp-route-page="1">1</a>
+        </li>
+
+        @if (startPage > 2)
+        {
+            <li class="page-item disabled">
+                <span class="page-link">...</span>
+            </li>
+        }
+    }
+
+    @for (int i = startPage; i <= endPage; i++)
+    {
+        <li class="page-item @(i == currentPage ? "active" : "")">
+            <a class="page-link" asp-action="Index" asp-route-page="@i"
+               aria-current="@(i == currentPage ? "page" : null)">@i</a>
+        </li>
+    }
+
+    @if (endPage < totalPages)
+    {
+        @if (endPage < totalPages - 1)
+        {
+            <li class="page-item disabled">
+                <span class="page-link">...</span>
+            </li>
+        }
+
+        <li class="page-item">
+            <a class="page-link" asp-action="Index" asp-route-page="@totalPages">@totalPages</a>
+        </li>
+    }
+
+    <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+        <a class="page-link" asp-action="Index" asp-route-page="@(currentPage + 1)"
+           aria-label="Próxima página">&rsaquo;</a>
+    </li>
+
+    <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+        <a class="page-link" asp-action="Index" asp-route-page="@totalPages" aria-label="Última página">&raquo;</a>
+    </li>
+
+</ul>

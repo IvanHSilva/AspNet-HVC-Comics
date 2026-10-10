@@ -1,0 +1,114 @@
+@model HVC_Comics.Models.PaginationResult<HVC_Comics.Models.Comic>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/comiclist.css" asp-append-version="true" />
+}
+
+@{
+    ViewData["Title"] = "Lista de Revistas";
+}
+
+<div class="comic-list-page">
+
+    <div class="comic-toolbar">
+
+        <div class="comic-toolbar-title">
+            <h1>Lista de Revistas</h1>
+        </div>
+
+        <div class="comic-toolbar-info">
+            <span>
+                <strong>Página:</strong>
+                @Model.CurrentPage de @Model.TotalPages
+            </span>
+
+            <span class="toolbar-separator">/</span>
+            <span>
+                <strong>Total:</strong>
+                @Model.TotalRecords registros
+            </span>
+        </div>
+
+        <div class="comic-toolbar-count">
+            <span class="badge bg-primary">
+                Exibindo @Model.Items.Count registros
+            </span>
+        </div>
+    </div>
+
+    <nav class="comic-pagination comic-pagination-top" aria-label="Navegação de páginas superior">
+        @await Html.PartialAsync("_ComicPagination", Model)
+    </nav>
+
+    <div class="comic-table-container">
+
+        <table class="comic-table">
+            <thead>
+                <tr>
+                    <th class="col-codigo">Código</th>
+                    <th>Revista</th>
+                    <th class="col-edicao">Edição</th>
+                    <th>Editora BR</th>
+                    <th>Editora EUA</th>
+                    <th>Mês</th>
+                    <th class="col-ano">Ano</th>
+                    <th class="col-preco">Preço</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var comic in Model.Items)
+                {
+                    var licensor = comic.Licensor ?? string.Empty;
+                    var name = comic.Name ?? string.Empty;
+                    var rowClass = licensor.Contains("Marvel",
+                            StringComparison.OrdinalIgnoreCase) ? "edit-marvel"
+                        : licensor.Contains("DC", StringComparison.OrdinalIgnoreCase)
+                        ? "edit-dc"
+                        : name.Contains("Wiz", StringComparison.OrdinalIgnoreCase)
+                          || name.Contains("Super-Heróis",
+                            StringComparison.OrdinalIgnoreCase) ? "edit-info"
+                        : "edit-outra";
+
+                    <tr class="comic-row @rowClass">
+                        <td class="col-codigo" data-label="Código">
+                            @comic.Id
+                        </td>
+
+                        <td data-label="Revista">
+                            @comic.Name
+                        </td>
+
+                        <td class="col-edicao" data-label="Edição">
+                            @comic.Number.ToString("D2")
+                        </td>
+
+                        <td data-label="Editora BR">
+                            @comic.Publisher
+                        </td>
+
+                        <td data-label="Editora EUA">
+                            @comic.Licensor
+                        </td>
+
+                        <td data-label="Mês">
+                            @comic.ComicMonth
+                        </td>
+
+                        <td class="col-ano" data-label="Ano">
+                            @comic.ComicYear
+                        </td>
+
+                        <td class="col-preco" data-label="Preço">
+                            @comic.Price.ToString("C")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="comic-pagination" aria-label="Navegação de páginas inferior">
+        @await Html.PartialAsync("_ComicPagination", Model)
+    </nav>
+</div>

@@ -1,0 +1,320 @@
+.comic-list-page {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.comic-list-page *,
+.comic-list-page *::before,
+.comic-list-page *::after {
+    box-sizing: border-box;
+}
+
+.comic-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    margin: 0 0 16px;
+    padding: 0;
+}
+
+.comic-toolbar-title {
+    min-width: 0;
+    text-align: left;
+}
+
+.comic-toolbar-title h1 {
+    margin: 0;
+    font-size: 1.65rem;
+    line-height: 1.25;
+    font-weight: 700;
+    color: #212529;
+}
+
+.comic-toolbar-info {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    min-width: 0;
+    text-align: center;
+    font-size: 0.95rem;
+}
+
+.comic-toolbar-info span {
+    white-space: nowrap;
+}
+
+.comic-toolbar-info strong {
+    font-weight: 700;
+}
+
+.comic-toolbar-info .toolbar-separator {
+    color: #9ca3af;
+}
+
+.comic-toolbar-count {
+    min-width: 0;
+    text-align: right;
+}
+
+.comic-toolbar-count .badge {
+    display: inline-block;
+    padding: 0.55em 0.8em;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.comic-table-container {
+    display: block;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+}
+
+.comic-table {
+    width: 100%;
+    min-width: 100%;
+    max-width: none;
+    margin: 0;
+    border-collapse: collapse;
+    border-spacing: 0;
+    font-size: 0.92rem;
+    color: #212529;
+}
+
+.comic-table thead th {
+    padding: 12px 12px;
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 700;
+    white-space: nowrap;
+    background-color: #212529;
+    color: #ffffff;
+    border: 1px solid #343a40;
+}
+
+.comic-table tbody td {
+    padding: 12px 12px;
+    vertical-align: middle;
+    line-height: 1.4;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.comic-table th.col-codigo,
+.comic-table td.col-codigo,
+.comic-table th.col-edicao,
+.comic-table td.col-edicao,
+.comic-table th.col-ano,
+.comic-table td.col-ano {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.comic-table th.col-preco,
+.comic-table td.col-preco {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.comic-table tbody tr.edit-marvel {
+    background-color: #dcfce7;
+}
+
+.comic-table tbody tr.edit-dc {
+    background-color: #ffedd5;
+}
+
+.comic-table tbody tr.edit-outra {
+    background-color: #fef9c3;
+}
+
+.comic-table tbody tr.edit-info {
+    background-color: #dbeafe;
+}
+
+.comic-table tbody tr {
+    transition: filter 0.15s ease;
+}
+
+.comic-table tbody tr:hover {
+    filter: brightness(0.96);
+}
+
+.comic-pagination {
+    width: 100%;
+    max-width: none;
+    margin: 20px 0 0;
+    padding: 0;
+}
+
+.comic-pagination .pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 3px;
+    margin: 0;
+    padding: 0;
+}
+
+.comic-pagination .page-link {
+    min-width: 36px;
+    text-align: center;
+    color: #212529;
+}
+
+.comic-pagination .page-item.active .page-link {
+    color: #ffffff;
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.comic-pagination .page-item.disabled .page-link {
+    pointer-events: none;
+}
+
+/* Tablet Mode */
+@media (max-width: 992px) {
+
+    .comic-toolbar {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        row-gap: 12px;
+    }
+
+    .comic-toolbar-title {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .comic-toolbar-count {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .comic-toolbar-info {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-content: flex-start;
+        text-align: left;
+    }
+
+    .comic-table {
+        min-width: 900px;
+    }
+}
+
+/* Cell mode */
+@media (max-width: 576px) {
+
+    .comic-toolbar {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .comic-toolbar-title,
+    .comic-toolbar-count,
+    .comic-toolbar-info {
+        grid-column: 1;
+        text-align: left;
+    }
+
+    .comic-toolbar-title {
+        grid-row: 1;
+    }
+
+    .comic-toolbar-title h1 {
+        font-size: 1.4rem;
+    }
+
+    .comic-toolbar-info {
+        grid-row: 2;
+        justify-content: flex-start;
+        gap: 6px 12px;
+        font-size: 0.88rem;
+    }
+
+    .comic-toolbar-count {
+        grid-row: 3;
+    }
+
+    .comic-toolbar-count .badge {
+        font-size: 0.8rem;
+    }
+
+    .comic-table {
+        min-width: 900px;
+        font-size: 0.88rem;
+    }
+
+    .comic-table thead th,
+    .comic-table tbody td {
+        padding: 12px 10px;
+    }
+
+    .comic-pagination {
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .comic-pagination .pagination {
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        width: max-content;
+        min-width: 100%;
+    }
+
+    .comic-pagination .page-link {
+        min-width: 34px;
+        padding: 0.375rem 0.55rem;
+    }
+}
+
+
+.comic-toolbar {
+    margin-bottom: 16px;
+}
+
+.comic-pagination-top {
+    margin-top: 0;
+    margin-bottom: 16px;
+}
+
+.comic-table {
+    border-collapse: collapse;
+    border: none;
+}
+
+.comic-table thead th {
+    border: none;
+}
+
+.comic-table tbody td {
+    border: none;
+}
+
+
+.comic-pagination {
+    width: 100%;
+    margin-top: 20px;
+}
+
+.comic-pagination-top {
+    margin-top: 0;
+    margin-bottom: 16px;
+}
+
+.comic-pagination .pagination {
+    margin-bottom: 0;
+}
