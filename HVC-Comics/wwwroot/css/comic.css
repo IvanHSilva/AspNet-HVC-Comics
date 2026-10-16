@@ -2,7 +2,7 @@
 .comic-card {
     display: grid;
     grid-template-columns: 330px minmax(0, 1fr);
-    gap: 50px;
+    gap: 30px;
     width: 100%;
     max-width: 1150px;
     margin: 0 auto;
@@ -32,9 +32,25 @@
 /* Covers */
 .comic-cover-container {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     height: 100%;
+    min-width: 0;
+}
+
+.comic-cover-container .comic-id-cover {
+    display: block;
+    position: static;
+    width: 100%;
+    margin-top: 12px;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 700;
+    color: transparent;
+    opacity: 1;
+    user-select: text;
+    -webkit-user-select: text;
 }
 
 .comic-cover {
@@ -73,9 +89,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 14px;
+    gap: 10px;
     width: 100%;
-    margin: 0 0 8px;
+    margin: 0 0 5px;
 }
 
 /* Comic + Edition */
@@ -88,7 +104,7 @@
 .comic-heading-title h1 {
     margin: 0;
     font-size: clamp(1.9rem, 3vw, 2.6rem);
-    line-height: 1.1;
+    line-height: 1.15;
     font-weight: 800;
     color: #111827;
     text-align: center;
@@ -101,7 +117,9 @@
     justify-content: center;
     gap: 15px;
     width: 100%;
-    flex-shrink: 0;
+    min-width: 0;
+    margin-inline: auto;
+    transform: translateX(-30px);
 }
 
 .publisher-logo {
@@ -127,19 +145,18 @@
 
 /* Cover title */
 .comic-title {
-    margin: 24px 0 14px;
+    margin: 10px 0 14px;
     font-size: 1.5rem;
     line-height: 1.25;
-    font-weight: 700;
+    font-weight: 400;
     color: #1f2937;
     text-align: center;
 }
 
 /* Cover characters */
 .comic-cover-char {
-    margin: 0 0 22px;
-    color: #4b5563;
     font-size: 1.15rem;
+    font-weight: 600;
     text-align: center;
 }
 
@@ -153,8 +170,8 @@
 .comic-info-row {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
-    padding: 16px 0;
+    gap: 10px;
+    padding: 10px 0;
 }
 
 .comic-info-row-three {
@@ -221,14 +238,48 @@
 
 /* Second row: Format, Pages, Stories, Articles */
 .comic-info-row-green .comic-info-item strong {
-    background-color: transparent;
+    background-color: #FEF9C3;
+}
+
+.edit-marvel .comic-info-row-green .comic-info-item strong {
+    background-color: #CCFBF1;
+}
+
+.edit-dc .comic-info-row-green .comic-info-item strong {
+    background-color: #fef08a;
+}
+
+.edit-outra .comic-info-row-green .comic-info-item strong {
+    background-color: #fed7aa;
+}
+
+.edit-info .comic-info-row-green .comic-info-item strong {
+    background-color: #bbf7d0;
+}
+
+.edit-marvel .comic-cover-char {
     color: #166534;
 }
 
+.edit-dc .comic-cover-char {
+    color: #EA580C;
+}
+
+.edit-outra .comic-cover-char {
+    color: #CA8A04;
+}
+
+.edit-info .comic-cover-char {
+    color: #1E40AF;
+}
+
+
 /* Third row: Paper, Binding, Cover Type */
 .comic-info-row-three .comic-info-item strong {
-    background-color: transparent;
-    color: #1d4ed8;
+    background-color: whitesmoke;
+    /* color: #7E22CE; */
+    /* border: 2px solid #7E22CE;
+    border-radius: 15px; */
 }
 
 /* Characteristics */
@@ -237,7 +288,7 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: 8px;
-    margin-top: 18px;
+    margin: 2px;
 }
 
 .comic-flags span {
@@ -258,8 +309,8 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: 6px;
-    margin-top: 18px;
-    padding-top: 14px;
+    /* margin-top: 5px; */
+    padding-top: 7px;
     font-size: 0.92rem;
     color: #374151;
     text-align: center;
@@ -338,6 +389,34 @@
     .comic-info-row {
         gap: 12px;
     }
+
+    /* Fist row */
+    .info-published {
+        min-width: 120%;
+    }
+
+    .info-price strong {
+        margin-left: 10px;
+        min-width: 90%;
+    }
+
+    .comic-info-item strong {
+        font-size: 0.7rem;
+    }
+
+    .comic-info-row-first .comic-info-item strong {
+        padding: 8px 4px;
+    }
+
+    /* Second row */
+    .comic-info-row-green .comic-info-item strong {
+        font-size: 0.8rem;
+        padding: 8px 6px;
+    }
+
+    .comic-info-item span {
+        font-size: 0.75rem;
+    }
 }
 
 /* Cell mode */
@@ -375,6 +454,33 @@
     .comic-info-row,
     .comic-info-row-three {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .info-published {
+        min-width: 100%;
+    }
+
+    .info-price strong {
+        margin-left: 0px;
+        min-width: 100%;
+    }
+
+    .comic-info-item strong {
+        font-size: 0.9rem;
+    }
+
+    .comic-info-row-first .comic-info-item strong {
+        padding: 8px 4px;
+    }
+
+    /* Second row */
+    .comic-info-row-green .comic-info-item strong {
+        font-size: 0.9rem;
+        padding: 8px 6px;
+    }
+
+    .comic-info-item span {
+        font-size: 0.75rem;
     }
 }
 

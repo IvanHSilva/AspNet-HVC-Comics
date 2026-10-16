@@ -62,9 +62,17 @@
         if (!string.IsNullOrWhiteSpace(name))
         {
             char first = name[0];
-            string folder = char.IsDigit(first) ? "#" : char.ToUpperInvariant(first).ToString();
-            string fileName = $"{name} {number}.jpg";
-            coverUrl = $"/capas/{folder}/{fileName}";
+            string folder = char.IsDigit(first)
+                ? "%23"
+                : char.ToUpperInvariant(first).ToString();
+
+            string guid = (Model.Guid ?? "").Trim();
+
+            string fileName = $"{guid}.jpg";
+
+            coverUrl = !string.IsNullOrWhiteSpace(guid)
+                ? $"/capas/{folder}/{Uri.EscapeDataString(fileName)}"
+                : null;
         }
     }
 
@@ -154,6 +162,8 @@
                         <small>Sem capa disponível</small>
                     </div>
                 }
+
+                <span class="comic-id-cover">@Model.Id</span>
             </div>
 
             <div class="comic-information">
@@ -163,7 +173,7 @@
                     <div class="comic-heading-title">
                         <h1>
                             @displayName #@Model.Number.ToString("D2")
-                            <span class="comic-id">@Model.Id</span>
+                            @* <span class="comic-id">@Model.Id</span> *@
                         </h1>
                     </div>
 
@@ -206,7 +216,7 @@
 
                 <div class="comic-info-row">
                     <div class="comic-info-item info-published">
-                        <span>Publicado em</span>
+                        <span>Publicação</span>
                         <strong>@Model.ComicMonth/@Model.ComicYear</strong>
                     </div>
 
@@ -232,7 +242,7 @@
                         <strong>@Model.Format</strong>
                     </div>
                     <div class="comic-info-item">
-                        <span>Número de páginas</span>
+                        <span>Páginas</span>
                         <strong>@Model.Pages</strong>
                     </div>
                     <div class="comic-info-item">

@@ -189,6 +189,7 @@ public class JsonComicRepository(
         return new Comic
         {
             Id = source.Codigo,
+            Guid = source.Guid,
             Name = source.RevistaBR,
             Number = source.EdicaoBR,
 
@@ -251,6 +252,7 @@ public class JsonComicRepository(
     private sealed class ComicJson
     {
         public int Codigo { get; set; }
+        public string Guid { get; set; } = string.Empty;
 
         public string RevistaBR { get; set; } = string.Empty;
         public int EdicaoBR { get; set; }

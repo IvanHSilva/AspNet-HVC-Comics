@@ -1,6 +1,6 @@
-# Comics
+# Comics Database
 
-Sistema para gerenciamento de coleção de revistas em quadrinhos desenvolvido com **ASP.NET Core (.NET 10)**, **ADO.NET**, **SQL Server** e **Bootstrap 5**.
+Sistema para revistas em quadrinhos desenvolvido com **ASP.NET Core (.NET 10)**, **ADO.NET**, **SQL Server** e **Bootstrap 5**.
 
 ## Tecnologias
 
@@ -11,10 +11,7 @@ Sistema para gerenciamento de coleção de revistas em quadrinhos desenvolvido c
 
 ## Funcionalidades
 
-- Cadastro de revistas
 - Consulta de revistas
-- Alteração de dados
-- Exclusão de registros
 - Pesquisa por diversos filtros
 - Dashboard com estatísticas
 - Relatórios diversos
@@ -38,3 +35,7 @@ O projeto utiliza SQL Server e acesso aos dados através de ADO.NET com consulta
 
 Organizar e catalogar uma coleção de Revistas  de Quadrinhos publicada no Brasil, permitindo consultas rápidas e gerenciamento completo do acervo.
 
+## 🌐 Site
+
+Acesse o **Comics Database** em [comicsdb.com.br](https://comicsdb.com.br)
+🚀 (Hospedado na AWS)

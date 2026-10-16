@@ -4,6 +4,7 @@ public class Comic
 {
     // Fields
     public int Id { get; set; }
+    public string Guid { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public int Number { get; set; }
     public int Stories { get; set; }

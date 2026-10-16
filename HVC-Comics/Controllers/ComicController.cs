@@ -13,7 +13,7 @@ IComicRepository repository) : Controller
         CancellationToken cancellationToken)
     {
         var comic = await _repository.GetRandomAsync(cancellationToken);
-        //var comic = await _repository.GetByIdAsync(2101);
+        //var comic = await _repository.GetByIdAsync(1613);
         return View(comic);
     }
 }
