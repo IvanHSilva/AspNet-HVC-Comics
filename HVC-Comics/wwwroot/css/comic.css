@@ -392,11 +392,11 @@
 
     /* Fist row */
     .info-published {
-        min-width: 120%;
+        min-width: 135%;
     }
 
     .info-price strong {
-        margin-left: 10px;
+        margin-left: 17px;
         min-width: 90%;
     }
 
