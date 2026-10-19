@@ -1,4 +1,5 @@
-using HVC_Comics.Data;
+using HVC_Comics.DataFactories;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace HVC_Comics.Controllers;
@@ -13,16 +14,12 @@ public class DBConnectionController(
         try
         {
             using var connection = _factory.CreateConnection();
-
             connection.Open();
-
-            return Content(
-                "Conexão com o SQL Server realizada com sucesso!");
+            return Content("Conexão com o SQL Server realizada com sucesso!");
         }
         catch (Exception ex)
         {
-            return Content(
-                $"Erro ao conectar ao Banco de Dados: {ex.Message}");
+            return Content($"Erro ao conectar ao Banco de Dados: {ex.Message}");
         }
     }
 }

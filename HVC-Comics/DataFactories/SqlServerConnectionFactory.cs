@@ -1,6 +1,6 @@
 using Microsoft.Data.SqlClient;
 
-namespace HVC_Comics.Data;
+namespace HVC_Comics.DataFactories;
 
 public class SqlServerConnectionFactory(IConfiguration configuration)
 {
@@ -8,14 +8,10 @@ public class SqlServerConnectionFactory(IConfiguration configuration)
 
     public SqlConnection CreateConnection()
     {
-        var connectionString =
-            _configuration.GetConnectionString("SQLServer");
+        var connectionString = _configuration.GetConnectionString("SQLServer");
 
         if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException(
-                "A connection string 'SQLServer' não foi configurada.");
-        }
+            throw new InvalidOperationException("A connection string 'SQLServer' não foi configurada.");
 
         return new SqlConnection(connectionString);
     }

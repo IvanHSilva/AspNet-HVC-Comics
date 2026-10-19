@@ -76,7 +76,10 @@
                         </td>
 
                         <td data-label="Revista">
-                            @comic.Name
+                            <a asp-controller="Comic" asp-action="Edition"
+                               asp-route-slug="@($"{comic.Name}-{comic.Number:D2}")" class="comic-link">
+                                @comic.Name #@comic.Number.ToString("D2")
+                            </a>
                         </td>
 
                         <td class="col-edicao" data-label="Edição">
