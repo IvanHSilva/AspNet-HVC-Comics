@@ -1,5 +1,6 @@
 using HVC_Comics.ComicData;
 using HVC_Comics.Models;
+using HVC_Comics.Views.Comic;
 
 using System.Globalization;
 using System.Text.Json;
@@ -116,6 +117,19 @@ public class JsonComicRepository(IComicDataStorage dataStorage, IMemoryCache cac
 
         return DateOnly.TryParse(value, new CultureInfo("pt-BR"), DateTimeStyles.None,
             out var date) ? date : default;
+    }
+
+    public async Task<Comic?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+            return null;
+
+        var requestedSlug = ComicSlug.Normalize(slug);
+        var comics = await GetComicsAsync(cancellationToken);
+
+        return comics.FirstOrDefault(comic => string.Equals(
+            ComicSlug.Create(comic.Name, comic.Number), requestedSlug,
+            StringComparison.OrdinalIgnoreCase));
     }
 
     private static Comic ToComic(ComicJson source)

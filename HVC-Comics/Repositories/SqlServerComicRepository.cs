@@ -1,5 +1,6 @@
 using HVC_Comics.DataFactories;
 using HVC_Comics.Models;
+using HVC_Comics.Views.Comic;
 
 using Microsoft.Data.SqlClient;
 using System.Data;
@@ -84,6 +85,37 @@ SqlServerConnectionFactory factory) : IComicRepository
         if (!await reader.ReadAsync(cancellationToken)) return null;
 
         return MapComic(reader);
+    }
+
+
+    public async Task<Comic?> GetBySlugAsync(string slug,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+            return null;
+
+        var normalizedSlug = ComicSlug.Normalize(slug);
+        const string sql = """
+        SELECT Codigo, RevistaBR, EdicaoBR, EditoraBR, ditoraEUA, NomeMesBR, AnoRevBR, Preco
+        FROM Revistas;
+        """;
+
+        await using var connection = _factory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var comic = MapComic(reader);
+            var comicSlug = ComicSlug.Create(comic.Name, comic.Number);
+
+            if (string.Equals(ComicSlug.Normalize(comicSlug),
+                normalizedSlug, StringComparison.OrdinalIgnoreCase))
+                return comic;
+        }
+
+        return null;
     }
 
     private static Comic MapComic(SqlDataReader reader)

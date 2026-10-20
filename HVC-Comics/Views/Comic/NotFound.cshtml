@@ -1,0 +1,18 @@
+@* Views/Comic/NotFound.cshtml *@ 
+@{
+    ViewData["Title"] = "Revista não encontrada";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/comic.css" asp-append-version="true" />
+}
+
+<section class="comic-not-found">
+    <div class="error-icon">📚</div>
+
+    <h1>Revista não encontrada!</h1>
+
+    <p>Desculpe, mas não foi possível encontrar esta edição!</p><br />
+    <p>Pode ser que ela não exista ou ainda não foi cadastrada.</p>
+
+</section>

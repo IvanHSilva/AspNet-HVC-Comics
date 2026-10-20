@@ -273,7 +273,6 @@
     color: #1E40AF;
 }
 
-
 /* Third row: Paper, Binding, Cover Type */
 .comic-info-row-three .comic-info-item strong {
     background-color: whitesmoke;
@@ -373,6 +372,48 @@
     margin-left: 50px;
     user-select: text;
 }
+
+/* NotFound */
+.comic-not-found {
+    max-width: 620px;
+    margin: 60px auto;
+    padding: 40px 24px;
+    text-align: center;
+    border-radius: 16px;
+    background: #f5f5f5;
+    color: #292929;
+}
+
+.comic-not-found .error-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+}
+
+.comic-not-found h1 {
+    font-size: 2rem;
+    margin-bottom: 12px;
+}
+
+.comic-not-found p {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    margin-bottom: 24px;
+}
+
+.comic-not-found .comic-button {
+    display: inline-block;
+    padding: 12px 22px;
+    border-radius: 8px;
+    background: #198754;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.comic-not-found .comic-button:hover {
+    background: #146c43;
+}
+
 
 /* Tablet mode */
 @media (max-width: 900px) {
