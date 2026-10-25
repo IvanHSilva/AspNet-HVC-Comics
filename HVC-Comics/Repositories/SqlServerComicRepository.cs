@@ -118,6 +118,30 @@ SqlServerConnectionFactory factory) : IComicRepository
         return null;
     }
 
+    public async Task<List<Comic>> GetEditionsAsync(string name,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return [];
+
+        const string sql = """
+        SELECT Codigo, RevistaBR, EdicaoBR, EditoraBR, EditoraEUA, NomeMesBR, AnoRevBR, Preco
+        FROM Revistas WHERE LTRIM(RTRIM(RevistaBR)) = @Name ORDER BY EdicaoBR ASC, Codigo ASC;
+        """;
+
+        var editions = new List<Comic>();
+
+        await using var connection = _factory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.Add("@Name", SqlDbType.NVarChar, 255).Value = name.Trim();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        while (await reader.ReadAsync(cancellationToken))
+            editions.Add(MapComic(reader));
+
+        return editions;
+    }
+
     private static Comic MapComic(SqlDataReader reader)
     {
         return new Comic

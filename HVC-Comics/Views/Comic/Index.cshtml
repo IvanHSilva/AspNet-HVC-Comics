@@ -8,9 +8,11 @@
 @{
     ViewData["Title"] = "Comics Database";
     ComicView? comicView = Model is not null ? new ComicView(Model) : null;
+    var editions = ViewData["Editions"] as List<HVC_Comics.Models.Comic>
+        ?? [];
 }
 
-<div class="home-page">
+<div class="home-page @(comicView?.EditorClass)">
 
     @if (Model is null)
     {
@@ -42,7 +44,7 @@
                     </div>
                 }
 
-                <span class="comic-id-cover">@Model.Id</span>
+                @* <span class="comic-id-cover">@Model.Id</span> *@
             </div>
 
             <div class="comic-information">
@@ -170,43 +172,52 @@
 
                 <div class="comic-flags">
 
-                    @if (Model.HaveMail)
+                    @if (editions.Count > 1)
                     {
-                        <span>✉️ Correio</span>
+                        <a class="edition-gallery-link" href="@ViewData["GalleryUrl"]">
+                            Galeria
+                        </a>
                     }
 
-                    @if (Model.HaveChecklist)
-                    {
-                        <span>☑️ Checklist</span>
-                    }
+                    <div class="comic-flags-items">
 
-                    @if (Model.IsBook)
-                    {
-                        <span>📚 Encadernado</span>
-                    }
+                        @if (Model.HaveMail)
+                        {
+                            <span>✉️ Correio</span>
+                        }
 
-                    @if (Model.IsReedition)
-                    {
-                        <span>🔄 Reedição</span>
-                    }
+                        @if (Model.HaveChecklist)
+                        {
+                            <span>☑️ Checklist</span>
+                        }
 
-                    @if (Model.IsCrossover)
-                    {
-                        <span>🔀 Crossover</span>
-                    }
+                        @if (Model.IsBook)
+                        {
+                            <span>📚 Encadernado</span>
+                        }
 
-                    @if (Model.IsBlackWhite)
-                    {
-                        <span>⚫ Preto e branco</span>
-                    }
+                        @if (Model.IsReedition)
+                        {
+                            <span>🔄 Reedição</span>
+                        }
 
-                    @if (Model.IsLastEdition)
-                    {
-                        <span>⭐ Última edição</span>
-                    }
+                        @if (Model.IsCrossover)
+                        {
+                            <span>🔀 Crossover</span>
+                        }
 
+                        @if (Model.IsBlackWhite)
+                        {
+                            <span>⚫ Preto e branco</span>
+                        }
+
+                        @if (Model.IsLastEdition)
+                        {
+                            <span>⭐ Última edição</span>
+                        }
+
+                    </div>
                 </div>
-
                 @if (!string.IsNullOrWhiteSpace(Model.ComicCall) &&
                      !Model.ComicCall.Equals(
                          "Nenhuma",
@@ -219,5 +230,24 @@
 
             </div>
         </article>
+
+        /* Editions links */
+        @if (editions.Count > 1)
+        {
+            <nav class="comic-edition-navigation" aria-label="Navegação entre edições">
+
+                @foreach (var edition in editions)
+                {
+                    var slug = ComicSlug.Create(edition.Name, edition.Number);
+                    var isCurrent = edition.Id == Model.Id;
+
+                    <a class="edition-number-link @(isCurrent ? "is-current" : "")" asp-controller="Comic" asp-action="Edition"
+                       asp-route-slug="@slug" aria-current="@(isCurrent ? "page" : null)" title="@edition.Name nº @edition.Number">
+                        @edition.Number.ToString("D2")
+                    </a>
+                }
+
+            </nav>
+        }
     }
 </div>

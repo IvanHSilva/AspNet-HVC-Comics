@@ -42,6 +42,36 @@ public class ComicController(
         if (!string.Equals(slug, canonicalSlug, StringComparison.OrdinalIgnoreCase))
             return RedirectToAction(nameof(Edition), new { slug = canonicalSlug });
 
+        var editions = await _repository.GetEditionsAsync(comic.Name, cancellationToken);
+
+        ViewData["Editions"] = editions;
+        ViewData["GalleryUrl"] = Url.Action(nameof(Gallery), new
+        {
+            collectionSlug = ComicSlug.Normalize(comic.Name)
+        });
+
         return View("Index", comic);
+    }
+
+    [HttpGet("edition/{collectionSlug}/galeria")]
+    public async Task<IActionResult> Gallery(string collectionSlug,
+        CancellationToken cancellationToken)
+    {
+        var editions = await _repository.GetEditionsAsync(collectionSlug, cancellationToken);
+
+        if (editions.Count == 0)
+        {
+            Response.StatusCode = StatusCodes.Status404NotFound;
+            return View("NotFound");
+        }
+
+        if (editions.Count == 1)
+        {
+            var slug = ComicSlug.Create(editions[0].Name, editions[0].Number);
+            return RedirectToAction(nameof(Edition), new { slug });
+        }
+        ViewData["CollectionName"] = editions[0].Name;
+
+        return View("Gallery", editions);
     }
 }

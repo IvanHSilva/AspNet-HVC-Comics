@@ -10,4 +10,6 @@ public interface IComicRepository
     Task<Comic?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
     Task<Comic?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default);
+
+    Task<List<Comic>> GetEditionsAsync(string name, CancellationToken cancellationToken = default);
 }

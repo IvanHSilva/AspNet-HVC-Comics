@@ -132,6 +132,19 @@ public class JsonComicRepository(IComicDataStorage dataStorage, IMemoryCache cac
             StringComparison.OrdinalIgnoreCase));
     }
 
+    public async Task<List<Comic>> GetEditionsAsync(string name,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return [];
+
+        var comics = await GetComicsAsync(cancellationToken);
+        var normalizedName = ComicSlug.Normalize(name);
+
+        return [.. comics.Where(comic =>
+            ComicSlug.Normalize(comic.Name) == normalizedName).OrderBy(comic => comic.Number)
+            .ThenBy(comic => comic.Id)];
+    }
+
     private static Comic ToComic(ComicJson source)
     {
         return new Comic

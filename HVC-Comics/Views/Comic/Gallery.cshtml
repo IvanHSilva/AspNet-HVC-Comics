@@ -1,0 +1,117 @@
+@using HVC_Comics.Views.Comic
+@using HVC_Comics.Models
+
+@model List<Comic>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/comic.css" />
+}
+
+@{
+    ViewData["Title"] = $"Galeria - {ViewData["CollectionName"]}";
+
+    var editions = (Model ?? new List<Comic>())
+        .OrderBy(c => c.Number)
+        .ThenBy(c => c.Id)
+        .ToList();
+
+    var firstComicView = editions.Count > 0
+        ? new ComicView(editions[0])
+        : null;
+}
+
+<main class="comic-gallery-page @(firstComicView?.EditorClass)">
+
+    <header class="comic-gallery-header">
+        <h1>@ViewData["CollectionName"]</h1>
+
+
+        @{
+            var firstEdition = editions.FirstOrDefault();
+            var lastEdition = editions.LastOrDefault();
+
+            var initialDate = firstEdition != null
+                ? $"{firstEdition.ComicMonth:D2}/{firstEdition.ComicYear}"
+                : "N/A";
+
+            var finalDate = lastEdition != null
+                ? $"{lastEdition.ComicMonth:D2}/{lastEdition.ComicYear}"
+                : "N/A";
+
+            var totalValue = editions.Sum(c => c.Price);
+            var totalPages = editions.Sum(c => c.Pages);
+        }
+
+
+        <div class="comic-gallery-summary">
+
+            <span class="comic-summary-item">
+                <span class="summary-icon">📚</span>
+                <strong class="summary-count">@editions.Count</strong>
+                <span class="summary-label">Edições</span>
+            </span>
+
+            <span class="comic-summary-item">
+                <span class="summary-icon">📅</span>
+                <span class="summary-label"></span>
+                <strong class="summary-period">@initialDate - @finalDate</strong>
+            </span>
+
+            <span class="comic-summary-item">
+                <span class="summary-icon">💰</span>
+                <span class="summary-label">Valor Total:</span>
+                <strong class="summary-value">R$ @totalValue.ToString("N2",
+                                                                                                                                                                                                System.Globalization.CultureInfo.GetCultureInfo("pt-BR"))</strong>
+                </span>
+
+                <span class="comic-summary-item">
+                    <span class="summary-icon">📖</span>
+                    <span class="summary-label">Total de Páginas: </span>
+                    <strong class="summary-pages">@totalPages.ToString("N0",
+                                                                                                                                                                                                                                    System.Globalization.CultureInfo.GetCultureInfo("pt-BR"))</strong>
+                    </span>
+
+                </div>
+            </header>
+
+            <nav class="comic-gallery-grid" aria-label="Galeria de capas">
+
+                @foreach (var edition in editions)
+                {
+                    var comicView = new ComicView(edition);
+                    var slug = ComicSlug.Create(edition.Name, edition.Number);
+
+                    <a class="comic-gallery-item" asp-controller="Comic" asp-action="Edition" asp-route-slug="@slug"
+                       title="@edition.Name nº @edition.Number">
+
+                        @if (!string.IsNullOrWhiteSpace(comicView.CoverUrl))
+                        {
+                            <img src="@comicView.CoverUrl" alt="Capa de @edition.Name nº @edition.Number" loading="lazy" width="165"
+                                 height="250" />
+                        }
+                        else
+                        {
+                            <div class="comic-gallery-no-cover">
+                                <span aria-hidden="true">📚</span>
+                                <small>Sem capa disponível</small>
+                            </div>
+                        }
+
+                        <div class="comic-gallery-details">
+                            <span class="comic-gallery-number">
+                                @edition.Number.ToString("D2") -
+                                @edition.ComicMonth/@edition.ComicYear
+                            </span>
+
+                            <span class="comic-gallery-price">
+                                @edition.Coin @edition.Price.ToString("N2") -
+                                @edition.Pages páginas
+                            </span>
+                        </div>
+
+                    </a>
+                }
+
+            </nav>
+
+        </main>
