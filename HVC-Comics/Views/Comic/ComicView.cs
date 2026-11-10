@@ -14,18 +14,16 @@ namespace HVC_Comics.Views.Comic
         public List<string> PublisherLogos { get; }
         public List<string> LicensorLogos { get; }
 
-        public IEnumerable<string> AllLogos =>
-            PublisherLogos.Concat(LicensorLogos).Distinct();
+        public IEnumerable<string> AllLogos => PublisherLogos.Concat(LicensorLogos).Distinct();
 
         public ComicView(ComicModel model)
         {
             Model = model ?? throw new ArgumentNullException(nameof(model));
-
             Name = (model.Name ?? "").Trim();
             Publisher = (model.Publisher ?? "").Trim();
             Licensor = (model.Licensor ?? "").Trim();
             CoverUrl = BuildCoverUrl(Name, model.Guid);
-            EditorClass = GetEditorClass(Name, Licensor);
+            EditorClass = GetEditorClass(model.Classification);
             StatusClass = GetStatusClass(model.ComicSituation);
             PublisherLogos = GetLogos(Publisher);
             LicensorLogos = GetLogos(Licensor);
@@ -35,8 +33,7 @@ namespace HVC_Comics.Views.Comic
         {
             var logos = new List<string>();
 
-            if (string.IsNullOrWhiteSpace(value))
-                return logos;
+            if (string.IsNullOrWhiteSpace(value)) return logos;
 
             var parts = value.Split(['/', ','], StringSplitOptions.RemoveEmptyEntries |
                 StringSplitOptions.TrimEntries
@@ -71,35 +68,44 @@ namespace HVC_Comics.Views.Comic
             return logos;
         }
 
+
         private static string? BuildCoverUrl(string name, string? guid)
         {
+
             if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(guid))
                 return null;
 
-            char first = name[0];
+            string normalizedName = name.Trim();
+            string[] articles = ["a", "o", "as", "os"];
+            int firstSpace = normalizedName.IndexOf(' ');
+
+            if (firstSpace > 0)
+            {
+                string firstWord = normalizedName[..firstSpace];
+
+                if (articles.Contains(firstWord, StringComparer.OrdinalIgnoreCase))
+                    normalizedName = normalizedName[(firstSpace + 1)..].TrimStart();
+            }
+
+            if (normalizedName.Length == 0) return null;
+
+            char first = normalizedName[0];
             string folder = char.IsDigit(first) ? "%23" : char.ToUpperInvariant(first).ToString();
             string fileName = $"{guid.Trim()}.jpg";
 
             return $"/capas/{folder}/{Uri.EscapeDataString(fileName)}";
         }
 
-        private static string GetEditorClass(string name, string licensor)
+        private static string GetEditorClass(string? classificacao)
         {
-            if (name.Contains("Super-Heróis", StringComparison.OrdinalIgnoreCase) ||
-                name.Contains("Mundo Nerd", StringComparison.OrdinalIgnoreCase) ||
-                name.Contains("Wizard", StringComparison.OrdinalIgnoreCase) ||
-                name.Contains("Wizmania", StringComparison.OrdinalIgnoreCase))
+            return classificacao?.Trim().ToUpperInvariant() switch
             {
-                return "edit-info";
-            }
-
-            if (licensor.Contains("Marvel", StringComparison.OrdinalIgnoreCase))
-                return "edit-marvel";
-
-            if (licensor.Contains("DC", StringComparison.OrdinalIgnoreCase))
-                return "edit-dc";
-
-            return "edit-outra";
+                "M" => "edit-marvel",
+                "D" => "edit-dc",
+                "O" => "edit-outra",
+                "I" => "edit-info",
+                _ => "edit-outra"
+            };
         }
 
         private static string GetStatusClass(string? situation)

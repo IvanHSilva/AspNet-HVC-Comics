@@ -49,5 +49,9 @@ public class Comic
     public bool IsDigital { get; set; }
     public bool IsBlackWhite { get; set; }
 
+    public int Volume { get; set; }
+    public int Covers { get; set; }
+    public string Classification { get; set; } = string.Empty;
+
     public string RegServer { get; set; } = string.Empty;
 }

@@ -8,8 +8,7 @@ public interface IComicRepository
         CancellationToken cancellationToken = default);
     Task<Comic?> GetRandomAsync(CancellationToken cancellationToken = default);
     Task<Comic?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-
     Task<Comic?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default);
-
-    Task<List<Comic>> GetEditionsAsync(string name, CancellationToken cancellationToken = default);
+    Task<List<Comic>> GetEditionsAsync(string baseName, int volume, CancellationToken cancellationToken = default);
+    Task<List<Comic>> GetVolumeStartsAsync(string baseName, CancellationToken cancellationToken = default);
 }

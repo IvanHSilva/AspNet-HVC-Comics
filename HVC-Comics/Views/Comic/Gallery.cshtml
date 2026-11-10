@@ -1,5 +1,7 @@
-@using HVC_Comics.Views.Comic
 @using HVC_Comics.Models
+@using HVC_Comics.Views.Comic
+
+@using System.Globalization
 
 @model List<Comic>
 
@@ -10,38 +12,55 @@
 @{
     ViewData["Title"] = $"Galeria - {ViewData["CollectionName"]}";
 
-    var editions = (Model ?? new List<Comic>())
-        .OrderBy(c => c.Number)
-        .ThenBy(c => c.Id)
-        .ToList();
+    var editions = (Model ?? new List<Comic>()).OrderBy(c => c.Number)
+        .ThenBy(c => c.Id).ToList();
+    var firstComicView = editions.Count > 0 ? new ComicView(editions[0]) : null;
+    var currentVolume = (int)(ViewData["CurrentVolume"] ?? 1);
 
-    var firstComicView = editions.Count > 0
-        ? new ComicView(editions[0])
-        : null;
+    var volumes = ViewData["Volumes"] as List<int> ?? [];
+    var collectionSlug = ViewData["CollectionSlug"] as string ?? "";
+
+    var firstEdition = editions.FirstOrDefault();
+    var lastEdition = editions.LastOrDefault();
+
+    var initialDate = firstEdition != null ? $"{firstEdition.ComicMonth:D2}/{firstEdition.ComicYear}" : "N/A";
+    var finalDate = lastEdition != null ? $"{lastEdition.ComicMonth:D2}/{lastEdition.ComicYear}" : "N/A";
+
+    var totalValue = editions.Sum(c => c.Price);
+    var totalPages = editions.Sum(c => c.Pages);
 }
 
 <main class="comic-gallery-page @(firstComicView?.EditorClass)">
 
     <header class="comic-gallery-header">
-        <h1>@ViewData["CollectionName"]</h1>
 
+        <div class="comic-gallery-title">
 
-        @{
-            var firstEdition = editions.FirstOrDefault();
-            var lastEdition = editions.LastOrDefault();
+            <h1>@ViewData["CollectionName"]</h1>
 
-            var initialDate = firstEdition != null
-                ? $"{firstEdition.ComicMonth:D2}/{firstEdition.ComicYear}"
-                : "N/A";
+            @if (volumes.Count > 1)
+            {
+                <nav class="comic-gallery-volumes" aria-label="Volumes">
 
-            var finalDate = lastEdition != null
-                ? $"{lastEdition.ComicMonth:D2}/{lastEdition.ComicYear}"
-                : "N/A";
+                    @foreach (var volume in volumes)
+                    {
+                        var volumeSlug = ComicSlug.CreateGallery(collectionSlug, volume);
+                        var isCurrent = volume == currentVolume;
 
-            var totalValue = editions.Sum(c => c.Price);
-            var totalPages = editions.Sum(c => c.Pages);
-        }
+                        <a href="@Url.Action("Gallery", "Comic",
+                            new { gallerySlug = volumeSlug })"
+                           class="comic-volume-link @(isCurrent ? "is-current" : "")"
+                           aria-current="@(isCurrent ? "page" : null)" title="Volume @ComicVolume.ToRoman(volume)">
 
+                            @ComicVolume.ToRoman(volume)
+
+                        </a>
+                    }
+
+                </nav>
+            }
+
+        </div>
 
         <div class="comic-gallery-summary">
 
@@ -53,65 +72,72 @@
 
             <span class="comic-summary-item">
                 <span class="summary-icon">📅</span>
-                <span class="summary-label"></span>
-                <strong class="summary-period">@initialDate - @finalDate</strong>
+                <strong class="summary-period">
+                    @initialDate - @finalDate
+                </strong>
             </span>
 
             <span class="comic-summary-item">
                 <span class="summary-icon">💰</span>
                 <span class="summary-label">Valor Total:</span>
-                <strong class="summary-value">R$ @totalValue.ToString("N2",
-                                                                                                                                                                                                System.Globalization.CultureInfo.GetCultureInfo("pt-BR"))</strong>
-                </span>
+                <strong class="summary-value">
+                    R$ @totalValue.ToString("N2", CultureInfo.GetCultureInfo("pt-BR"))
+                </strong>
+            </span>
 
-                <span class="comic-summary-item">
-                    <span class="summary-icon">📖</span>
-                    <span class="summary-label">Total de Páginas: </span>
-                    <strong class="summary-pages">@totalPages.ToString("N0",
-                                                                                                                                                                                                                                    System.Globalization.CultureInfo.GetCultureInfo("pt-BR"))</strong>
+            <span class="comic-summary-item">
+                <span class="summary-icon">📖</span>
+                <span class="summary-label">Total de Páginas:</span>
+                <strong class="summary-pages">
+                    @totalPages.ToString("N0", CultureInfo.GetCultureInfo("pt-BR"))
+                </strong>
+            </span>
+
+        </div>
+
+    </header>
+
+    @* Comic covers *@
+    <nav class="comic-gallery-grid" aria-label="Galeria de capas">
+
+        @foreach (var edition in editions)
+        {
+            var comicView = new ComicView(edition);
+            var slug = ComicSlug.Create(edition.Name, edition.Number);
+
+            <a class="comic-gallery-item" asp-controller="Comic" asp-action="Edition" asp-route-slug="@slug"
+               title="@edition.Name nº @edition.Number">
+
+                @if (!string.IsNullOrWhiteSpace(comicView.CoverUrl))
+                {
+                    <img src="@comicView.CoverUrl" alt="Capa de @edition.Name nº @edition.Number" loading="lazy" width="165"
+                         height="250" />
+                }
+                else
+                {
+                    <div class="comic-gallery-no-cover">
+                        <span aria-hidden="true">📚</span>
+                        <small>Sem capa disponível</small>
+                    </div>
+                }
+
+                <div class="comic-gallery-details">
+
+                    <span class="comic-gallery-number">
+                        @edition.Number.ToString("D2") -
+                        @edition.ComicMonth/@edition.ComicYear
+                    </span>
+
+                    <span class="comic-gallery-price">
+                        @edition.Coin @edition.Price.ToString("N2") -
+                        @edition.Pages páginas
                     </span>
 
                 </div>
-            </header>
 
-            <nav class="comic-gallery-grid" aria-label="Galeria de capas">
+            </a>
+        }
 
-                @foreach (var edition in editions)
-                {
-                    var comicView = new ComicView(edition);
-                    var slug = ComicSlug.Create(edition.Name, edition.Number);
+    </nav>
 
-                    <a class="comic-gallery-item" asp-controller="Comic" asp-action="Edition" asp-route-slug="@slug"
-                       title="@edition.Name nº @edition.Number">
-
-                        @if (!string.IsNullOrWhiteSpace(comicView.CoverUrl))
-                        {
-                            <img src="@comicView.CoverUrl" alt="Capa de @edition.Name nº @edition.Number" loading="lazy" width="165"
-                                 height="250" />
-                        }
-                        else
-                        {
-                            <div class="comic-gallery-no-cover">
-                                <span aria-hidden="true">📚</span>
-                                <small>Sem capa disponível</small>
-                            </div>
-                        }
-
-                        <div class="comic-gallery-details">
-                            <span class="comic-gallery-number">
-                                @edition.Number.ToString("D2") -
-                                @edition.ComicMonth/@edition.ComicYear
-                            </span>
-
-                            <span class="comic-gallery-price">
-                                @edition.Coin @edition.Price.ToString("N2") -
-                                @edition.Pages páginas
-                            </span>
-                        </div>
-
-                    </a>
-                }
-
-            </nav>
-
-        </main>
+</main>

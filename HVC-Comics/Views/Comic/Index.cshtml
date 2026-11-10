@@ -8,8 +8,9 @@
 @{
     ViewData["Title"] = "Comics Database";
     ComicView? comicView = Model is not null ? new ComicView(Model) : null;
-    var editions = ViewData["Editions"] as List<HVC_Comics.Models.Comic>
-        ?? [];
+    var editions = ViewData["Editions"] as List<HVC_Comics.Models.Comic> ?? [];
+    var volumeStarts = ViewData["VolumeStarts"] as List<HVC_Comics.Models.Comic> ?? [];
+    var currentVolume = (int?)ViewData["CurrentVolume"] ?? 1;
 }
 
 <div class="home-page @(comicView?.EditorClass)">
@@ -21,9 +22,7 @@
             <h1>Comics Database</h1>
             <p>Não foi possível encontrar uma revista.</p>
 
-            <a asp-controller="Home" asp-action="Index" class="comic-button">
-                Tentar novamente
-            </a>
+            <a asp-controller="Home" asp-action="Index" class="comic-button">Tentar novamente</a>
         </section>
     }
     else
@@ -43,8 +42,6 @@
                         <small>Sem capa disponível</small>
                     </div>
                 }
-
-                @* <span class="comic-id-cover">@Model.Id</span> *@
             </div>
 
             <div class="comic-information">
@@ -90,10 +87,8 @@
                     </div>
                 </div>
 
-                @if (!string.IsNullOrWhiteSpace(Model.ComicTitle) &&
-                     !Model.ComicTitle.Equals(
-                         "Nenhum",
-                         StringComparison.OrdinalIgnoreCase))
+                @if (!string.IsNullOrWhiteSpace(Model.ComicTitle) && !Model.ComicTitle.Equals(
+                    "Nenhum", StringComparison.OrdinalIgnoreCase))
                 {
                     <h2 class="comic-title">@Model.ComicTitle</h2>
                 }
@@ -179,8 +174,26 @@
                         </a>
                     }
 
-                    <div class="comic-flags-items">
+                    @if (volumeStarts.Count > 1)
+                    {
+                        <nav class="comic-volume-navigation" aria-label="Volumes da revista">
 
+                            @foreach (var volumeStart in volumeStarts)
+                            {
+                                var isCurrent = volumeStart.Volume == currentVolume;
+                                var volumeSlug = ComicSlug.Create(volumeStart.Name, volumeStart.Number);
+
+                                <a class="comic-volume-link @(isCurrent ? "is-current" : "")" asp-controller="Comic"
+                                   asp-action="Edition" asp-route-slug="@volumeSlug" aria-current="@(isCurrent ? "page" : null)"
+                                   title="Volume @ComicVolume.ToRoman(volumeStart.Volume)">
+                                    @ComicVolume.ToRoman(volumeStart.Volume)
+                                </a>
+                            }
+
+                        </nav>
+                    }
+
+                    <div class="comic-flags-items">
                         @if (Model.HaveMail)
                         {
                             <span>✉️ Correio</span>
@@ -218,10 +231,8 @@
 
                     </div>
                 </div>
-                @if (!string.IsNullOrWhiteSpace(Model.ComicCall) &&
-                     !Model.ComicCall.Equals(
-                         "Nenhuma",
-                         StringComparison.OrdinalIgnoreCase))
+                @if (!string.IsNullOrWhiteSpace(Model.ComicCall) && !Model.ComicCall.Equals(
+                    "Nenhuma", StringComparison.OrdinalIgnoreCase))
                 {
                     <div class="comic-call">
                         <span>@Model.ComicCall</span>

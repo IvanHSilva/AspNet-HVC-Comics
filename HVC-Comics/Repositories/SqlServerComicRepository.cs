@@ -23,8 +23,7 @@ SqlServerConnectionFactory factory) : IComicRepository
 
         await using var connection = _factory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
-        await using (var countCommand = new SqlCommand(
-            "SELECT COUNT(*) FROM Revistas", connection))
+        await using (var countCommand = new SqlCommand("SELECT COUNT(*) FROM Revistas", connection))
         {
             result.TotalRecords = Convert.ToInt32(await countCommand.ExecuteScalarAsync(
                 cancellationToken));
@@ -87,12 +86,9 @@ SqlServerConnectionFactory factory) : IComicRepository
         return MapComic(reader);
     }
 
-
-    public async Task<Comic?> GetBySlugAsync(string slug,
-        CancellationToken cancellationToken = default)
+    public async Task<Comic?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(slug))
-            return null;
+        if (string.IsNullOrWhiteSpace(slug)) return null;
 
         var normalizedSlug = ComicSlug.Normalize(slug);
         const string sql = """
@@ -110,22 +106,23 @@ SqlServerConnectionFactory factory) : IComicRepository
             var comic = MapComic(reader);
             var comicSlug = ComicSlug.Create(comic.Name, comic.Number);
 
-            if (string.Equals(ComicSlug.Normalize(comicSlug),
-                normalizedSlug, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(ComicSlug.Normalize(comicSlug), normalizedSlug, StringComparison.OrdinalIgnoreCase))
                 return comic;
         }
 
         return null;
     }
 
-    public async Task<List<Comic>> GetEditionsAsync(string name,
-        CancellationToken cancellationToken = default)
+    public async Task<List<Comic>> GetEditionsAsync(string baseName, int volume,
+    CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(name)) return [];
+
+        if (string.IsNullOrWhiteSpace(baseName)) return [];
 
         const string sql = """
-        SELECT Codigo, RevistaBR, EdicaoBR, EditoraBR, EditoraEUA, NomeMesBR, AnoRevBR, Preco
-        FROM Revistas WHERE LTRIM(RTRIM(RevistaBR)) = @Name ORDER BY EdicaoBR ASC, Codigo ASC;
+        SELECT Codigo, RevistaBR, EdicaoBR, EditoraBR, EditoraEUA, NomeMesBR, AnoRevBR, Preco, Volume, Capas, Classificacao
+        FROM Revistas WHERE LTRIM(RTRIM(RevistaBR)) = @Name
+        AND Volume = @Volume ORDER BY EdicaoBR ASC, Codigo ASC; 
         """;
 
         var editions = new List<Comic>();
@@ -133,13 +130,44 @@ SqlServerConnectionFactory factory) : IComicRepository
         await using var connection = _factory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         await using var command = new SqlCommand(sql, connection);
-        command.Parameters.Add("@Name", SqlDbType.NVarChar, 255).Value = name.Trim();
+
+        command.Parameters.Add("@Name", SqlDbType.NVarChar, 255).Value = baseName.Trim();
+        command.Parameters.Add("@Volume", SqlDbType.Int).Value = volume;
+
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         while (await reader.ReadAsync(cancellationToken))
             editions.Add(MapComic(reader));
 
         return editions;
+    }
+
+    public async Task<List<Comic>> GetVolumeStartsAsync(string baseName,
+        CancellationToken cancellationToken = default)
+    {
+
+        if (string.IsNullOrWhiteSpace(baseName)) return [];
+
+        const string sql = """
+        SELECT r.Codigo, r.RevistaBR, r.EdicaoBR, r.EditoraBR, r.EditoraEUA, r.NomeMesBR, r.AnoRevBR, r.Preco, r.Volume, r.Capas, r.Classificacao
+        FROM Revistas r INNER JOIN (SELECT Volume, MIN(Codigo) AS PrimeiroCodigo FROM Revistas
+        WHERE LTRIM(RTRIM(RevistaBR)) = @Name GROUP BY Volume) v ON r.Codigo = v.PrimeiroCodigo ORDER BY r.Volume ASC;
+        """;
+
+        var volumes = new List<Comic>();
+
+        await using var connection = _factory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+
+        command.Parameters.Add("@Name", SqlDbType.NVarChar, 255).Value = baseName.Trim();
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        while (await reader.ReadAsync(cancellationToken))
+            volumes.Add(MapComic(reader));
+
+        return volumes;
     }
 
     private static Comic MapComic(SqlDataReader reader)

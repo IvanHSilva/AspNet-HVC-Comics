@@ -2,9 +2,9 @@ using HVC_Comics.ComicData;
 using HVC_Comics.Models;
 using HVC_Comics.Views.Comic;
 
+using Microsoft.Extensions.Caching.Memory;
 using System.Globalization;
 using System.Text.Json;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace HVC_Comics.Repositories;
 
@@ -25,8 +25,7 @@ public class JsonComicRepository(IComicDataStorage dataStorage, IMemoryCache cac
 
         var comics = await GetComicsAsync(cancellationToken);
         var totalRecords = comics.Count;
-        var totalPages = totalRecords == 0 ? 1 : (int)Math.Ceiling(
-                (double)totalRecords / pageSize);
+        var totalPages = totalRecords == 0 ? 1 : (int)Math.Ceiling((double)totalRecords / pageSize);
 
         page = Math.Min(page, totalPages);
 
@@ -43,8 +42,7 @@ public class JsonComicRepository(IComicDataStorage dataStorage, IMemoryCache cac
     public async Task<Comic?> GetRandomAsync(CancellationToken cancellationToken = default)
     {
         var comics = await GetComicsAsync(cancellationToken);
-        if (comics.Count == 0)
-            return null;
+        if (comics.Count == 0) return null;
 
         var randomId = comics[Random.Shared.Next(comics.Count)].Id;
 
@@ -59,8 +57,7 @@ public class JsonComicRepository(IComicDataStorage dataStorage, IMemoryCache cac
 
     private async Task<List<Comic>> GetComicsAsync(CancellationToken cancellationToken)
     {
-        if (_cache.TryGetValue(CacheKey, out List<Comic>? comics) &&
-            comics is not null)
+        if (_cache.TryGetValue(CacheKey, out List<Comic>? comics) && comics is not null)
             return comics;
 
         comics = await LoadComicsAsync(cancellationToken);
@@ -78,13 +75,11 @@ public class JsonComicRepository(IComicDataStorage dataStorage, IMemoryCache cac
             if (stream is null)
             {
                 _logger.LogWarning("Não foi possível localizar Comics.json.");
-
                 return [];
             }
 
-            var source = await JsonSerializer.DeserializeAsync<List<ComicJson>>(
-                stream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true },
-                    cancellationToken) ?? [];
+            var source = await JsonSerializer.DeserializeAsync<List<ComicJson>>(stream,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }, cancellationToken) ?? [];
 
             return [.. source.Select(ToComic).OrderBy(comic => comic.Id)];
         }
@@ -112,8 +107,7 @@ public class JsonComicRepository(IComicDataStorage dataStorage, IMemoryCache cac
 
     private static DateOnly ParseDate(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return default;
+        if (string.IsNullOrWhiteSpace(value)) return default;
 
         return DateOnly.TryParse(value, new CultureInfo("pt-BR"), DateTimeStyles.None,
             out var date) ? date : default;
@@ -121,28 +115,41 @@ public class JsonComicRepository(IComicDataStorage dataStorage, IMemoryCache cac
 
     public async Task<Comic?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(slug))
-            return null;
+        if (string.IsNullOrWhiteSpace(slug)) return null;
 
         var requestedSlug = ComicSlug.Normalize(slug);
         var comics = await GetComicsAsync(cancellationToken);
 
-        return comics.FirstOrDefault(comic => string.Equals(
-            ComicSlug.Create(comic.Name, comic.Number), requestedSlug,
+        return comics.FirstOrDefault(comic => string.Equals(ComicSlug.Create(comic.Name, comic.Number), requestedSlug,
             StringComparison.OrdinalIgnoreCase));
     }
 
-    public async Task<List<Comic>> GetEditionsAsync(string name,
-        CancellationToken cancellationToken = default)
+    public async Task<List<Comic>> GetEditionsAsync(string name, int volume,
+    CancellationToken cancellationToken = default)
     {
+
         if (string.IsNullOrWhiteSpace(name)) return [];
 
         var comics = await GetComicsAsync(cancellationToken);
         var normalizedName = ComicSlug.Normalize(name);
 
-        return [.. comics.Where(comic =>
-            ComicSlug.Normalize(comic.Name) == normalizedName).OrderBy(comic => comic.Number)
-            .ThenBy(comic => comic.Id)];
+        return [.. comics.Where(comic => ComicSlug.Normalize(ComicVolume.GetBaseName(
+            comic.Name, comic.Volume)) == normalizedName && comic.Volume == volume)
+            .OrderBy(comic => comic.Number).ThenBy(comic => comic.Id)];
+    }
+
+    public async Task<List<Comic>> GetVolumeStartsAsync(string name,
+    CancellationToken cancellationToken = default)
+    {
+
+        if (string.IsNullOrWhiteSpace(name)) return [];
+
+        var comics = await GetComicsAsync(cancellationToken);
+        var normalizedName = ComicSlug.Normalize(name);
+
+        return [.. comics.Where(comic => ComicSlug.Normalize(ComicVolume.GetBaseName(comic.Name, comic.Volume)) ==
+            normalizedName).GroupBy(comic => comic.Volume).Select(group => group.OrderBy(comic => comic.Number)
+            .ThenBy(comic => comic.Id).First()).OrderBy(comic => comic.Volume)];
     }
 
     private static Comic ToComic(ComicJson source)
@@ -194,6 +201,11 @@ public class JsonComicRepository(IComicDataStorage dataStorage, IMemoryCache cac
             IsPhisic = source.Fisica,
             IsDigital = source.Digital,
             IsBlackWhite = source.SemCores,
+
+            Volume = source.Volume,
+            Covers = source.Capas,
+            Classification = source.Classificacao,
+
             RegServer = source.Servidor
         };
     }
@@ -247,6 +259,11 @@ public class JsonComicRepository(IComicDataStorage dataStorage, IMemoryCache cac
         public bool Fisica { get; set; }
         public bool Digital { get; set; }
         public bool SemCores { get; set; }
+
+        public int Volume { get; set; }
+        public int Capas { get; set; }
+        public string Classificacao { get; set; } = string.Empty;
+
         public string Servidor { get; set; } = string.Empty;
     }
 }
