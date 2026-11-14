@@ -1,3 +1,4 @@
+
 # Docs for the Azure Web Apps Deploy action:
 # https://github.com/Azure/webapps-deploy
 #
@@ -28,6 +29,10 @@ jobs:
 
     steps:
 
+      # --------------------------------------------------------
+      # CHECKOUT
+      # --------------------------------------------------------
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -44,56 +49,172 @@ jobs:
         run: dotnet --info
 
       # --------------------------------------------------------
+      # CLEAN PREVIOUS BUILD
+      # --------------------------------------------------------
+
+      - name: Clean previous build
+        shell: pwsh
+        run: |
+          Remove-Item HVC-Comics/bin `
+            -Recurse -Force -ErrorAction SilentlyContinue
+
+          Remove-Item HVC-Comics/obj `
+            -Recurse -Force -ErrorAction SilentlyContinue
+
+          Remove-Item "${{ github.workspace }}\publish" `
+            -Recurse -Force -ErrorAction SilentlyContinue
+
+      # --------------------------------------------------------
       # RESTORE
       # --------------------------------------------------------
 
       - name: Restore
+        shell: pwsh
         run: |
           dotnet restore `
-            HVC-Comics/HVC-Comics.csproj
+            HVC-Comics/HVC-Comics.csproj `
+            --runtime win-x64 `
+            -p:SelfContained=true
+
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
 
       # --------------------------------------------------------
       # BUILD
       # --------------------------------------------------------
 
       - name: Build
+        shell: pwsh
         run: |
           dotnet build `
             HVC-Comics/HVC-Comics.csproj `
             --configuration Release `
+            --runtime win-x64 `
             --self-contained true `
             --no-restore
+
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
 
       # --------------------------------------------------------
       # PUBLISH
       #
+      # Self-contained Windows x64
+      #
       # Comics.json is excluded by the .csproj:
       #
       # <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-      #
-      # Therefore Data/Comics.json is NOT included in publish.
       # --------------------------------------------------------
 
       - name: Publish
+        shell: pwsh
         run: |
           dotnet publish `
             HVC-Comics/HVC-Comics.csproj `
             --configuration Release `
+            --runtime win-x64 `
             --self-contained true `
-            --no-build `
             --output "${{ github.workspace }}\publish"
 
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
       # --------------------------------------------------------
-      # VERIFY PUBLISH
+      # VERIFY SELF-CONTAINED PUBLISH
       # --------------------------------------------------------
 
-      - name: Verify publish
+      - name: Verify self-contained publish
         shell: pwsh
         run: |
+
           $publish = "${{ github.workspace }}\publish"
 
           Write-Host "=========================================="
-          Write-Host "Published files"
+          Write-Host "VERIFYING SELF-CONTAINED PUBLISH"
+          Write-Host "=========================================="
+
+          $requiredFiles = @(
+            "HVC-Comics.exe",
+            "HVC-Comics.dll",
+            "web.config",
+            "hostfxr.dll",
+            "hostpolicy.dll",
+            "coreclr.dll"
+          )
+
+          foreach ($file in $requiredFiles) {
+
+            $path = Join-Path $publish $file
+
+            if (-not (Test-Path $path)) {
+              throw "Required file missing: $file"
+            }
+
+            Write-Host "OK: $file"
+
+          }
+
+          Write-Host ""
+          Write-Host "Checking web.config..."
+
+          $webConfig = Join-Path $publish "web.config"
+
+          [xml]$config = Get-Content $webConfig -Raw
+
+          $aspNetCore = $config.SelectSingleNode("//aspNetCore")
+
+          if ($null -eq $aspNetCore) {
+            throw "aspNetCore configuration not found."
+          }
+
+          $processPath = $aspNetCore.GetAttribute("processPath")
+
+          Write-Host "ProcessPath: $processPath"
+
+          if ($processPath -notmatch '\.exe$') {
+            throw "Publish is not configured as self-contained."
+          }
+
+          Write-Host "OK: Self-contained web.config."
+
+          Write-Host ""
+          Write-Host "Checking Comics.json..."
+
+          $comicsFile = Join-Path $publish "Data\Comics.json"
+
+          if (Test-Path $comicsFile) {
+            throw "ERROR: Comics.json was included in publish."
+          }
+
+          Write-Host "OK: Comics.json is NOT included."
+
+          Write-Host ""
+          Write-Host "Checking publish architecture..."
+
+          $exe = Get-Item (Join-Path $publish "HVC-Comics.exe")
+
+          Write-Host "Executable size: $($exe.Length) bytes"
+
+          Write-Host ""
+          Write-Host "=========================================="
+          Write-Host "PUBLISH VERIFICATION COMPLETED"
+          Write-Host "=========================================="
+
+      # --------------------------------------------------------
+      # SHOW PUBLISHED FILES
+      # --------------------------------------------------------
+
+      - name: Show published files
+        shell: pwsh
+        run: |
+
+          $publish = "${{ github.workspace }}\publish"
+
+          Write-Host "=========================================="
+          Write-Host "PUBLISHED FILES"
           Write-Host "=========================================="
 
           Get-ChildItem `
@@ -116,18 +237,6 @@ jobs:
 
           "{0:N2} MB" -f ($size / 1MB)
 
-          Write-Host ""
-          Write-Host "Checking Comics.json..."
-
-          $comicsFile = Join-Path $publish "Data\Comics.json"
-
-          if (Test-Path $comicsFile) {
-            Write-Error "ERROR: Comics.json was included in the publish output."
-            exit 1
-          }
-
-          Write-Host "OK: Comics.json is NOT included in the deployment."
-
       # --------------------------------------------------------
       # CREATE ZIP
       # --------------------------------------------------------
@@ -135,6 +244,7 @@ jobs:
       - name: Create deployment package
         shell: pwsh
         run: |
+
           $publish = "${{ github.workspace }}\publish"
           $package = "${{ github.workspace }}\hvc-comics.zip"
 
@@ -148,7 +258,7 @@ jobs:
             -Force
 
           Write-Host "=========================================="
-          Write-Host "Deployment package"
+          Write-Host "DEPLOYMENT PACKAGE"
           Write-Host "=========================================="
 
           Get-Item $package |
@@ -163,6 +273,7 @@ jobs:
         with:
           name: hvc-comics-azure
           path: ${{ github.workspace }}/hvc-comics.zip
+          if-no-files-found: error
 
 
   # ============================================================
@@ -190,6 +301,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: hvc-comics-azure
+          path: ${{ github.workspace }}
 
       # --------------------------------------------------------
       # VERIFY ARTIFACT
@@ -198,22 +310,19 @@ jobs:
       - name: Verify deployment package
         shell: pwsh
         run: |
+
           $package = "${{ github.workspace }}\hvc-comics.zip"
 
           Write-Host "=========================================="
-          Write-Host "Deployment package"
+          Write-Host "VERIFYING DEPLOYMENT PACKAGE"
           Write-Host "=========================================="
 
           if (-not (Test-Path $package)) {
-            Write-Error "Deployment package not found."
-            exit 1
+            throw "Deployment package not found."
           }
 
           Get-Item $package |
             Select-Object Name, Length
-
-          Write-Host ""
-          Write-Host "Checking package contents..."
 
           Add-Type -AssemblyName System.IO.Compression.FileSystem
 
@@ -221,17 +330,42 @@ jobs:
 
           try {
 
-            $comics = $zip.Entries |
+            $entries = $zip.Entries
+
+            $requiredFiles = @(
+              "HVC-Comics.exe",
+              "HVC-Comics.dll",
+              "web.config",
+              "hostfxr.dll",
+              "hostpolicy.dll",
+              "coreclr.dll"
+            )
+
+            foreach ($file in $requiredFiles) {
+
+              $entry = $entries |
+                Where-Object {
+                  $_.FullName -eq $file
+                }
+
+              if (-not $entry) {
+                throw "Required file missing from ZIP: $file"
+              }
+
+              Write-Host "OK: $file"
+
+            }
+
+            $comics = $entries |
               Where-Object {
                 $_.FullName -match '(^|/)Data/Comics\.json$'
               }
 
             if ($comics) {
-              Write-Error "ERROR: Comics.json exists inside the deployment package."
-              exit 1
+              throw "ERROR: Comics.json exists inside deployment package."
             }
 
-            Write-Host "OK: Comics.json is not present in the package."
+            Write-Host "OK: Comics.json is not present."
 
           }
           finally {
@@ -239,6 +373,8 @@ jobs:
             $zip.Dispose()
 
           }
+
+          Write-Host "Deployment package verified successfully."
 
       # --------------------------------------------------------
       # LOGIN AZURE
