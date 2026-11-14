@@ -61,6 +61,7 @@ jobs:
           dotnet build `
             HVC-Comics/HVC-Comics.csproj `
             --configuration Release `
+            --self-contained true `
             --no-restore
 
       # --------------------------------------------------------
@@ -78,6 +79,7 @@ jobs:
           dotnet publish `
             HVC-Comics/HVC-Comics.csproj `
             --configuration Release `
+            --self-contained true `
             --no-build `
             --output "${{ github.workspace }}\publish"
 
