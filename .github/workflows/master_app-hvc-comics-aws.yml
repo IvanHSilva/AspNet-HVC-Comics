@@ -293,19 +293,44 @@ jobs:
           # Stop application
           # ----------------------------------------------------
 
+          # ----------------------------------------------------
+
+          # Validate .NET 11 runtime
+          # ----------------------------------------------------
+
           echo "Checking .NET 11 runtime..."
+          
+          DOTNET_BIN="/usr/bin/dotnet"
 
-          dotnet --list-runtimes
+          if [ ! -x "$DOTNET_BIN" ]; then
+              echo "ERROR: dotnet executable not found at $DOTNET_BIN"
+              exit 1
+          fi
 
-          if ! dotnet --list-runtimes | grep -q '^Microsoft.AspNetCore.App 11\.'; then
-            echo "ERROR: ASP.NET Core Runtime 11 is not installed."
-            exit 1
+          echo "Dotnet executable:"
+          readlink -f "$DOTNET_BIN"
+
+          echo ""
+          echo "Installed runtimes:"
+
+          "$DOTNET_BIN" --list-runtimes
+
+          echo ""
+
+          if ! "$DOTNET_BIN" --list-runtimes | grep -qE '^Microsoft.AspNetCore.App 11\.'; then
+              echo "ERROR: ASP.NET Core Runtime 11 is not installed."
+              exit 1
+          fi
+
+          if ! "$DOTNET_BIN" --list-runtimes | grep -qE '^Microsoft.NETCore.App 11\.'; then
+              echo "ERROR: .NET Core Runtime 11 is not installed."
+              exit 1
           fi
 
           echo ".NET 11 runtime is available."
 
           echo "Stopping application..."
-
+          
           sudo systemctl stop "$SERVICE"
 
           echo "Application stopped."
