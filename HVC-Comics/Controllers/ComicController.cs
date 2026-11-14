@@ -76,7 +76,8 @@ public class ComicController(IComicRepository repository) : Controller
         }
 
         var volumes = volumeStarts.Select(c => c.Volume).Distinct().Order().ToList();
-        var currentVolume = hasVolume ? requestedVolume : 1;
+        var currentVolume = hasVolume ? requestedVolume : volumes.Contains(0) ? 0 : 1;
+        //var currentVolume = hasVolume ? requestedVolume : 1;
 
         if (!volumes.Contains(currentVolume))
         {

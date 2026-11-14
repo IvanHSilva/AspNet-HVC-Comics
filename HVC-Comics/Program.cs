@@ -185,19 +185,16 @@ switch (comicDataSource)
 var app = builder.Build();
 
 // HTTP Pipeline
-if (!app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Local"))
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+if (!app.Environment.IsEnvironment("Local")) app.UseHttpsRedirection();
 
-app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
-
-app.MapStaticAssets();
-app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}")
-.WithStaticAssets();
+app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();

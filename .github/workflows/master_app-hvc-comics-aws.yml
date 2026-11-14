@@ -28,7 +28,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.x'
+          dotnet-version: '11.x'
 
       - name: Show .NET version
         run: dotnet --info
@@ -292,6 +292,17 @@ jobs:
           # ----------------------------------------------------
           # Stop application
           # ----------------------------------------------------
+
+          echo "Checking .NET 11 runtime..."
+
+          dotnet --list-runtimes
+
+          if ! dotnet --list-runtimes | grep -q '^Microsoft.AspNetCore.App 11\.'; then
+            echo "ERROR: ASP.NET Core Runtime 11 is not installed."
+            exit 1
+          fi
+
+          echo ".NET 11 runtime is available."
 
           echo "Stopping application..."
 

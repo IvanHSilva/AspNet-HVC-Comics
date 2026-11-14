@@ -49,8 +49,7 @@ public static class ComicSlug
     {
         var slug = Normalize(ComicVolume.GetBaseName(name, volume));
 
-        if (volume == 0) return $"{slug}-sem-volume";
-        if (volume == 1) return slug;
+        if (volume <= 1) return slug;
 
         return $"{slug}-{ComicVolume.ToRoman(volume).ToLowerInvariant()}";
     }
